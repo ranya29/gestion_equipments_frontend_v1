@@ -19,37 +19,40 @@ import AddEquipment from "./pages/Equipments/AddEquipment";
 import ReservationsList from "./pages/Reservations/ReservationsList";
 import History from "./pages/History/History";
 import NewReservation from "./pages/Reservations/NewReservation";
+import { ToastContainer } from "react-toastify";
+import ProtectedRoute from "./hooks/RoutPrivate";
 
 export default function App() {
   return (
     <>
+      <ToastContainer style={{ marginTop:"80px"}}/>
       <Router>
         <ScrollToTop />
         <Routes>
           {/* Dashboard Layout */}
           <Route element={<AppLayout />}>
             {/* Dashboard */}
-            <Route index path="/" element={<Home />} />
+            <Route index path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
 
             {/* ➕ Gestion des Équipements */}
-            <Route path="/equipments" element={<EquipmentsList />} />
-            <Route path="/equipments/add" element={<AddEquipment />} />
+            <Route path="/equipments" element={<ProtectedRoute><EquipmentsList /></ProtectedRoute>} />
+            <Route path="/equipments/add" element={<ProtectedRoute><AddEquipment /></ProtectedRoute>} />
 
             {/* ➕ Réservations */}
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/reservations" element={<ReservationsList />} />
-              <Route path="/reservations/new" element={<NewReservation />} />
+            <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
+            <Route path="/reservations" element={<ProtectedRoute><ReservationsList /></ProtectedRoute>} />
+              <Route path="/reservations/new" element={<ProtectedRoute><NewReservation /></ProtectedRoute>} />
 
             {/* ➕ Historique */}
-            <Route path="/history" element={<History />} />
+            <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
 
             {/* Utilisateurs */}
-            <Route path="/profile" element={<UserProfiles />} />
-            <Route path="/users" element={<BasicTables />} />
+            <Route path="/profile" element={<ProtectedRoute><UserProfiles /></ProtectedRoute>} />
+            <Route path="/users" element={<ProtectedRoute><BasicTables /></ProtectedRoute>} />
 
             {/* Pages utilitaires */}
-            <Route path="/form-elements" element={<FormElements />} />
-            <Route path="/basic-tables" element={<BasicTables />} />
+            <Route path="/form-elements" element={<ProtectedRoute><FormElements /></ProtectedRoute>} />
+            <Route path="/basic-tables" element={<ProtectedRoute><BasicTables /></ProtectedRoute>} />
           </Route>
 
           {/* Auth Layout */}
