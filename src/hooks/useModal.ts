@@ -1,3 +1,4 @@
+//src/hooks/useModal.ts
 import { useState, useCallback } from "react";
 
 export const useModal = (initialState: boolean = false) => {
