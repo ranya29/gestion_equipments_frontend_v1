@@ -1,5 +1,4 @@
 import axios, { AxiosInstance } from "axios";
-declare module "../../axios";
 
 const API_URL: string = "http://localhost:3000/api";
 
