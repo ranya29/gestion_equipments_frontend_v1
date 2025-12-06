@@ -51,12 +51,19 @@ export default function SignInForm() {
       });
 
       console.log('✅ Login réussi:', res?.data);
+      console.log('role from back:', res.data.user.role);
+      console.log('full user:', res.data.user);
+      
       
       toast.success("Vous avez connecté avec succès.");
       localStorage.setItem("token", res.data.token);
+      localStorage.setItem("role", res.data.user.role);
+      
+      
       
       // ✅ الذهاب للـ home بدلاً من "/"
-      navigate("/");
+      navigate("/dashboard"); 
+
     } catch (error: any) {
       console.error('❌ Erreur login:', error?.response?.data);
       toast.error(error?.response?.data?.message || "Erreur de connexion");

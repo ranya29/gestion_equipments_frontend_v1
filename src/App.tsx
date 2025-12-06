@@ -1,68 +1,152 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router";
+
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+
 // Auth
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
-// Pages existantes à garder
-import NotFound from "./pages/OtherPage/NotFound";
-import UserProfiles from "./pages/UserProfiles";
-import Calendar from "./pages/Calendar";
-import BasicTables from "./pages/Tables/BasicTables";
-import FormElements from "./pages/Forms/FormElements";
+import { AuthProvider } from "./context/AuthContext";
 // Layout
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
-import Home from "./pages/Dashboard/Home";
 
-// ➕ NOUVELLES PAGES
+// Protected & Role
+import ProtectedRoute from "./hooks/RoutPrivate";
+import RoleRoute from "./hooks/RoleRoute";
+
+// Pages
+import Home from "./pages/Dashboard/Home";
+import UsersList from "./pages/Users/UsersList";
+import UserProfiles from "./pages/UserProfiles";
+import Calendar from "./pages/Calendar";
 import EquipmentsList from "./pages/Equipments/EquipmentsList";
 import AddEquipment from "./pages/Equipments/AddEquipment";
 import ReservationsList from "./pages/Reservations/ReservationsList";
-import History from "./pages/History/History";
 import NewReservation from "./pages/Reservations/NewReservation";
-import { ToastContainer } from "react-toastify";
-import ProtectedRoute from "./hooks/RoutPrivate";
+import History from "./pages/History/History";
+import NotFound from "./pages/OtherPage/NotFound";
 
 export default function App() {
+  
   return (
-    <>
-      <ToastContainer style={{ marginTop:"80px"}}/>
-      <Router>
-        <ScrollToTop />
-        <Routes>
-          {/* Dashboard Layout */}
-          <Route element={<AppLayout />}>
-            {/* Dashboard */}
-            <Route index path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+    <AuthProvider>
+    <Router>
+      <ScrollToTop />
 
-            {/* ➕ Gestion des Équipements */}
-            <Route path="/equipments" element={<ProtectedRoute><EquipmentsList /></ProtectedRoute>} />
-            <Route path="/equipments/add" element={<ProtectedRoute><AddEquipment /></ProtectedRoute>} />
+      <Routes>
 
-            {/* ➕ Réservations */}
-            <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
-            <Route path="/reservations" element={<ProtectedRoute><ReservationsList /></ProtectedRoute>} />
-              <Route path="/reservations/new" element={<ProtectedRoute><NewReservation /></ProtectedRoute>} />
+        {/* DEFAULT → REDIRECT TO SIGNIN */}
+        <Route path="/" element={<Navigate to="/signin" replace />} />
 
-            {/* ➕ Historique */}
-            <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+        {/* PUBLIC ROUTES */}
+        <Route path="/signin" element={<SignIn />} />
+        <Route path="/signup" element={<SignUp />} />
 
-            {/* Utilisateurs */}
-            <Route path="/profile" element={<ProtectedRoute><UserProfiles /></ProtectedRoute>} />
-            <Route path="/users" element={<ProtectedRoute><BasicTables /></ProtectedRoute>} />
+        {/* PROTECTED LAYOUT */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <AppLayout />
+            </ProtectedRoute>
+          }
+        >
 
-            {/* Pages utilitaires */}
-            <Route path="/form-elements" element={<ProtectedRoute><FormElements /></ProtectedRoute>} />
-            <Route path="/basic-tables" element={<ProtectedRoute><BasicTables /></ProtectedRoute>} />
-          </Route>
+          {/* Dashboard */}
+          <Route
+            path="dashboard"
+            element={
+              <RoleRoute allowedRoles={["admin", "user"]}>
+                <Home />
+              </RoleRoute>
+            }
+          />
 
-          {/* Auth Layout */}
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
+          {/* USERS */}
+          <Route
+            path="users"
+            element={
+              <RoleRoute allowedRoles={["admin"]}>
+                <UsersList />
+              </RoleRoute>
+            }
+          />
 
-          {/* Fallback Route */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Router>
-    </>
+          {/* PROFILE */}
+          <Route
+            path="profile"
+            element={
+              <RoleRoute allowedRoles={["admin", "user"]}>
+                <UserProfiles />
+              </RoleRoute>
+            }
+          />
+
+          {/* EQUIPMENTS */}
+          <Route
+            path="equipments"
+            element={
+              <RoleRoute allowedRoles={["admin", "user"]}>
+                <EquipmentsList />
+              </RoleRoute>
+            }
+          />
+
+          <Route
+            path="equipments/add"
+            element={
+              <RoleRoute allowedRoles={["admin"]}>
+                <AddEquipment />
+              </RoleRoute>
+            }
+          />
+
+          {/* CALENDAR */}
+          <Route
+            path="calendar"
+            element={
+              <RoleRoute allowedRoles={["admin", "user"]}>
+                <Calendar />
+              </RoleRoute>
+            }
+          />
+
+          {/* RESERVATIONS */}
+          <Route
+            path="reservations"
+            element={
+              <RoleRoute allowedRoles={["admin", "user"]}>
+                <ReservationsList />
+              </RoleRoute>
+            }
+          />
+
+          <Route
+            path="reservations/new"
+            element={
+              <RoleRoute allowedRoles={["admin", "user"]}>
+                <NewReservation />
+              </RoleRoute>
+            }
+          />
+
+          {/* HISTORY */}
+          <Route
+            path="history"
+            element={
+              <RoleRoute allowedRoles={["admin"]}>
+                <History />
+              </RoleRoute>
+            }
+          />
+
+        </Route>
+
+        {/* 404 */}
+        <Route path="*" element={<NotFound />} />
+
+      </Routes>
+    </Router>
+    </AuthProvider>
   );
 }
+
