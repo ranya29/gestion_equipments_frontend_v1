@@ -1,11 +1,12 @@
 import { useState, ChangeEvent, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import PageMeta from "../../components/common/PageMeta";
 import axios from "axios";
 import { toast } from "react-toastify";
 
-const NewReservation: React.FC = () => {
+const EditReservation: React.FC = () => {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>(); 
 
   const [equipment, setEquipment] = useState<string>("");
   const [quantity, setQuantity] = useState<number>(1);
@@ -19,10 +20,62 @@ const NewReservation: React.FC = () => {
   const [timeError, setTimeError] = useState("");
   const [descriptionError, setDescriptionError] = useState("");
 
-  // Récupération de l’équipement sélectionné
+  // Convertit une date ISO en valeur compatible `input[type="datetime-local"]`
+  const formatDateForInput = (isoDate?: string | null) => {
+    if (!isoDate) return "";
+    const d = new Date(isoDate);
+    if (isNaN(d.getTime())) return "";
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    const yyyy = d.getFullYear();
+    const mm = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const min = pad(d.getMinutes());
+    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+  };
+
+  // Récupération de l'équipement sélectionné
   const selectedEquipment = listEquipements.find((e) => e._id === equipment);
   const maxCapacity = selectedEquipment ? selectedEquipment.capacite.valeur : null;
   const capacityUnit = selectedEquipment ? selectedEquipment.capacite.unite : "";
+
+  // Charger la réservation existante
+  const fetchReservation = async () => {
+    if (!id) return;
+    try {
+      const res = await axios.get(`http://localhost:3000/api/reservations/${id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      const reservation = res.data.reservation;
+      setEquipment(reservation.equipment._id);
+      setQuantity(reservation.quantity);
+      setStartTime(formatDateForInput(reservation.startDate));
+      setEndTime(formatDateForInput(reservation.endDate));
+      setDescreption(reservation.descreption);
+    } catch (error: any) {
+      console.error("Erreur lors du chargement de la réservation :", error);
+      toast.error(error.response?.data?.message || "Erreur lors du chargement de la réservation.");
+    }
+  };
+
+  // Charger tous les équipements
+  const getAllEquipments = async () => {
+    try {
+      const res = await axios.get("http://localhost:3000/api/equipments");
+      setListEquipements(res.data.data);
+    } catch (error) {
+      console.error("Erreur lors de la récupération des équipements :", error);
+    }
+  };
+
+  useEffect(() => {
+    getAllEquipments();
+    if (id) {
+      fetchReservation();
+    }
+  }, [id]);
 
   const onFinish = async () => {
     try {
@@ -59,10 +112,10 @@ const NewReservation: React.FC = () => {
       }
 
       // Validation description
-      if (!descreption.trim()) {
+      if (!descreption?.trim()) {
         setDescriptionError("Veuillez entrer une description.");
         hasError = true;
-      } else if (descreption.length > 500) {
+      } else if (descreption?.length > 500) {
         setDescriptionError("La description ne peut pas dépasser 500 caractères.");
         hasError = true;
       } else {
@@ -71,14 +124,14 @@ const NewReservation: React.FC = () => {
 
       if (hasError) return;
 
-      // POST seulement si tout est OK
-      const res = await axios.post(
-        "http://localhost:3000/api/reservations",
+      // PUT pour modification
+      const res = await axios.put(
+        `http://localhost:3000/api/reservations/${id}`,
         {
           equipmentId: equipment,
           quantity,
-          startDate: startTime,
-          endDate: endTime,
+          startDate: startTime ? new Date(startTime).toISOString() : null,
+          endDate: endTime ? new Date(endTime).toISOString() : null,
           description: descreption,
         },
         {
@@ -91,38 +144,25 @@ const NewReservation: React.FC = () => {
 
       toast.success(res.data.message);
       navigate("/reservations");
-      console.log("Réservation créée :", res.data);
+      console.log("Réservation modifiée :", res.data);
     } catch (error: any) {
-      console.error("Erreur lors de la création :", error);
+      console.error("Erreur lors de la modification :", error);
       toast.error(
-        error.response?.data?.message || "Erreur lors de la création de la réservation."
+        error.response?.data?.message || "Erreur lors de la modification de la réservation."
       );
     }
   };
 
-  const getAllEquipments = async () => {
-    try {
-      const res = await axios.get("http://localhost:3000/api/equipments");
-      setListEquipements(res.data.data);
-    } catch (error) {
-      console.error("Erreur lors de la récupération des équipements :", error);
-    }
-  };
-
-  useEffect(() => {
-    getAllEquipments();
-  }, []);
-
   return (
     <>
       <PageMeta
-        title="Nouvelle Réservation | Equipment Manager"
-        description="Créer une nouvelle réservation"
+        title="Modifier Réservation | Equipment Manager"
+        description="Modifier une réservation existante"
       />
       <div className="p-6 lg:p-10 bg-gray-100 min-h-screen">
         <div className="max-w-3xl mx-auto bg-white shadow-lg rounded-xl p-8">
           <h1 className="text-2xl font-bold mb-6 text-gray-800">
-            Nouvelle Réservation
+            Modifier Réservation
           </h1>
           <form className="space-y-5">
             {/* Équipement */}
@@ -136,7 +176,7 @@ const NewReservation: React.FC = () => {
                 onChange={(e: ChangeEvent<HTMLSelectElement>) => {
                   setEquipmentError("");
                   setEquipment(e.target.value);
-                  setQuantity(1); // Reset quantité à 1 à chaque changement d’équipement
+                  setQuantity(1);
                   setQuantityError("");
                 }}
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
@@ -261,9 +301,9 @@ const NewReservation: React.FC = () => {
               <button
                 type="button"
                 onClick={onFinish}
-                className="px-5 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                className="px-5 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700"
               >
-                Réserver
+                Modifier
               </button>
             </div>
           </form>
@@ -273,4 +313,4 @@ const NewReservation: React.FC = () => {
   );
 };
 
-export default NewReservation;
+export default EditReservation;
