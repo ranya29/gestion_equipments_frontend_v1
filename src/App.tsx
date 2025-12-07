@@ -21,6 +21,7 @@ import History from "./pages/History/History";
 import NewReservation from "./pages/Reservations/NewReservation";
 import { ToastContainer } from "react-toastify";
 import ProtectedRoute from "./hooks/RoutPrivate";
+import EditReservation from "./pages/Reservations/EditReservation";
 
 export default function App() {
   return (
@@ -41,7 +42,9 @@ export default function App() {
             {/* ➕ Réservations */}
             <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
             <Route path="/reservations" element={<ProtectedRoute><ReservationsList /></ProtectedRoute>} />
-              <Route path="/reservations/new" element={<ProtectedRoute><NewReservation /></ProtectedRoute>} />
+            <Route path="/reservations/new" element={<ProtectedRoute><NewReservation /></ProtectedRoute>} />
+            <Route path="/reservations/:id/edit" element={<ProtectedRoute><EditReservation /></ProtectedRoute>}/>
+
 
             {/* ➕ Historique */}
             <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
