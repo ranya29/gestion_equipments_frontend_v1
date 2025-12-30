@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import axios from "axios";
+import { toast } from "react-toastify"; // <- ajouté
+import "react-toastify/dist/ReactToastify.css";
 
 // Types
 interface Reservation {
-  id: number;
+  id: string;
   equipmentName: string;
   userName: string;
   date: string;
@@ -14,61 +17,61 @@ interface Reservation {
 }
 
 const ReservationsList = () => {
-  // Données exemple - À remplacer par un appel API
-  const [reservations] = useState<Reservation[]>([
-    {
-      id: 1,
-      equipmentName: "Microscope électronique",
-      userName: "Ahmed Ben Ali",
-      date: "2024-11-20",
-      startTime: "09:00",
-      endTime: "11:00",
-      status: "approved",
-      reason: "Recherche sur les cellules",
-    },
-    {
-      id: 2,
-      equipmentName: "Imprimante 3D",
-      userName: "Fatma Karim",
-      date: "2024-11-21",
-      startTime: "14:00",
-      endTime: "16:00",
-      status: "pending",
-      reason: "Impression prototype",
-    },
-    {
-      id: 3,
-      equipmentName: "Spectromètre",
-      userName: "Mohamed Salah",
-      date: "2024-11-22",
-      startTime: "10:00",
-      endTime: "12:00",
-      status: "approved",
-      reason: "Analyse chimique",
-    },
-    {
-      id: 4,
-      equipmentName: "Scanner 3D",
-      userName: "Leila Mansour",
-      date: "2024-11-19",
-      startTime: "15:00",
-      endTime: "17:00",
-      status: "completed",
-      reason: "Numérisation objet",
-    },
-    {
-      id: 5,
-      equipmentName: "Microscope électronique",
-      userName: "Youssef Trabelsi",
-      date: "2024-11-18",
-      startTime: "08:00",
-      endTime: "10:00",
-      status: "rejected",
-      reason: "Examen microbiologique",
-    },
-  ]);
-
+  const [reservations, setReservations] = useState<Reservation[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>("all");
+
+  // Récupérer les réservations depuis le backend
+  const fetchReservations = async () => {
+    try {
+      const res = await axios.get("http://localhost:3000/api/reservations", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      setReservations(
+        res.data.reservations.map((r: any) => ({
+          id: r._id,
+          equipmentName: r.equipment.nom,
+          userName: r.user.nom,
+          date: r.startDate,
+          startTime: new Date(r.startDate).toLocaleTimeString("fr-FR", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          endTime: new Date(r.endDate).toLocaleTimeString("fr-FR", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          status: r.status,
+          reason: r.description,
+        }))
+      );
+    } catch (error) {
+      console.error("Erreur lors de la récupération des réservations :", error);
+    }
+  };
+
+  // Fonction pour annuler une réservation
+  const cancelReservation = async (id: string) => {
+    try {
+      await axios.delete(`http://localhost:3000/api/reservations/${id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      toast.success("Réservation annulée avec succès !");
+      // Met à jour la liste après annulation
+      setReservations(reservations.filter((r) => r.id !== id));
+    } catch (error) {
+      console.error("Erreur lors de l'annulation :", error);
+      toast.error("Impossible d'annuler la réservation.");
+    }
+  };
+
+  useEffect(() => {
+    fetchReservations();
+    const interval = setInterval(fetchReservations, 30000); // rafraîchissement toutes les 30s
+    return () => clearInterval(interval);
+  }, []);
 
   const getStatusBadge = (status: Reservation["status"]) => {
     const statusConfig = {
@@ -90,13 +93,13 @@ const ReservationsList = () => {
       },
     };
 
-    const config = statusConfig[status];
-
     return (
       <span
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.className}`}
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+          statusConfig[status].className
+        }`}
       >
-        {config.text}
+        {statusConfig[status].text}
       </span>
     );
   };
@@ -278,16 +281,17 @@ const ReservationsList = () => {
                     <td className="px-6 py-4">
                       {reservation.startTime} - {reservation.endTime}
                     </td>
-                    <td className="px-6 py-4">
-                      {getStatusBadge(reservation.status)}
-                    </td>
+                    <td className="px-6 py-4">{getStatusBadge(reservation.status)}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <button className="font-medium text-blue-600 hover:underline dark:text-blue-500">
                           Détails
                         </button>
                         {reservation.status === "pending" && (
-                          <button className="font-medium text-red-600 hover:underline dark:text-red-500">
+                          <button
+                            onClick={() => cancelReservation(reservation.id)} // <- relié ici
+                            className="font-medium text-red-600 hover:underline dark:text-red-500"
+                          >
                             Annuler
                           </button>
                         )}

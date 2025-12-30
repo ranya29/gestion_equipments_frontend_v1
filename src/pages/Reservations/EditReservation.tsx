@@ -14,6 +14,7 @@ const EditReservation: React.FC = () => {
   const [endTime, setEndTime] = useState<string>("");
   const [descreption, setDescreption] = useState<string>("");
   const [listEquipements, setListEquipements] = useState<Array<any>>([]);
+  const [status, setStatus] = useState<string>("pending"); // pending par défaut
 
   const [equipmentError, setEquipmentError] = useState("");
   const [quantityError, setQuantityError] = useState("");

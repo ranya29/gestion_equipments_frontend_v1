@@ -71,7 +71,7 @@ const NewReservation: React.FC = () => {
 
       if (hasError) return;
 
-      // POST seulement si tout est OK
+      // POST seulement si tout est OK (ne plus envoyer `status`)
       const res = await axios.post(
         "http://localhost:3000/api/reservations",
         {
@@ -102,7 +102,9 @@ const NewReservation: React.FC = () => {
 
   const getAllEquipments = async () => {
     try {
+      
       const res = await axios.get("http://localhost:3000/api/equipments");
+      console.log(res.data); // 🔍 vérifier ce qui est reçu
       setListEquipements(res.data.data);
     } catch (error) {
       console.error("Erreur lors de la récupération des équipements :", error);
@@ -136,7 +138,7 @@ const NewReservation: React.FC = () => {
                 onChange={(e: ChangeEvent<HTMLSelectElement>) => {
                   setEquipmentError("");
                   setEquipment(e.target.value);
-                  setQuantity(1); // Reset quantité à 1 à chaque changement d’équipement
+                  setQuantity(1); // Reset quantité
                   setQuantityError("");
                 }}
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"

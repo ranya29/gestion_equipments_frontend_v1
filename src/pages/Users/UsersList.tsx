@@ -1,6 +1,3 @@
-//lahne presque kol chy : utulisateur, les button 
-
-
 import { useEffect, useState } from "react";
 import usersApi from "../../services/api/usersApi";
 import { User, UserFormData } from "../../types/user.types";
@@ -31,7 +28,6 @@ const UsersList = () => {
   // --- Recherche ---
   const handleSearch = (value: string) => {
     setSearch(value);
-
     const filtered = users.filter(
       (u) =>
         u.nom?.toLowerCase().includes(value.toLowerCase()) ||
@@ -39,7 +35,6 @@ const UsersList = () => {
         u.username?.toLowerCase().includes(value.toLowerCase()) ||
         u.email?.toLowerCase().includes(value.toLowerCase())
     );
-
     setFilteredUsers(filtered);
   };
 
@@ -67,47 +62,41 @@ const UsersList = () => {
     setIsModalOpen(false);
     setSelectedUser(null);
   };
+
   const handleSubmitUser = async (data: UserFormData) => {
-  try {
-    let response;
+    try {
+      let response;
 
-    if (selectedUser) {
-      // MODE EDIT
-      const payload: Partial<UserFormData> = { ...data };
-      if (!payload.motDePasse) delete payload.motDePasse;
-      response = await usersApi.update(selectedUser._id, payload);
-    } else {
-      // MODE CREATE → transformer data en UserRegisterPayload
-      const payload = {
-        username: data.username || `${data.nom}.${data.prenom}`,
-        email: data.email,
-        password: data.motDePasse!,
-        roleName: data.role
-      };
-      console.log("Payload envoyé :", payload); // <--- log pour debug
-      response = await usersApi.register(payload);
+      if (selectedUser) {
+        // MODE EDIT
+        const payload: Partial<UserFormData> = { ...data };
+        if (!payload.motDePasse) delete payload.motDePasse;
+        response = await usersApi.update(selectedUser._id, payload);
+      } else {
+        // MODE CREATE
+        const payload = {
+          username: data.username || `${data.nom}.${data.prenom}`,
+          email: data.email,
+          password: data.motDePasse!,
+          roleName: data.role
+        };
+        response = await usersApi.register(payload);
+      }
+
+      if (response) {
+        await fetchUsers();
+        handleModalClose();
+      }
+    } catch (error) {
+      console.error("❌ Erreur API :", error);
     }
+  };
 
-    if (response) {
-      await fetchUsers();
-      handleModalClose();
-    }
-  } catch (error) {
-    console.error("❌ Erreur API :", error);
-  }
-};
-
-
-
-
-
-return (
+  return (
     <div className="p-8 bg-gray-50 min-h-screen">
 
       {/* HEADER + SEARCH */}
       <div className="flex justify-between items-center mb-6">
-
-        {/* Search Bar */}
         <div className="relative w-1/3">
           <input
             type="text"
@@ -118,7 +107,6 @@ return (
           />
         </div>
 
-        {/* Button Add */}
         <button
           className="bg-green-500 hover:bg-green-600 text-white px-5 py-2 rounded-lg shadow-md font-medium transition"
           onClick={handleAddUser}
@@ -152,10 +140,7 @@ return (
               </tr>
             ) : (
               filteredUsers.map((user) => (
-                <tr
-                  key={user._id}
-                  className="hover:bg-gray-50 transition border-b"
-                >
+                <tr key={user._id} className="hover:bg-gray-50 transition border-b">
                   <td className="p-3">{user.nom || "—"}</td>
                   <td className="p-3">{user.prenom || "—"}</td>
                   <td className="p-3">{user.username || "—"}</td>
@@ -164,9 +149,7 @@ return (
                   <td className="p-3 capitalize">
                     <span
                       className={`px-2 py-1 rounded text-white text-sm ${
-                        user.statut === "actif"
-                          ? "bg-green-500"
-                          : "bg-gray-400"
+                        user.statut === "actif" ? "bg-green-500" : "bg-gray-400"
                       }`}
                     >
                       {user.statut}
@@ -175,25 +158,19 @@ return (
                   <td className="p-3">
                     {typeof user.role === "string" ? user.role : user.role?.name}
                   </td>
-
                   <td className="p-3 flex gap-3 justify-center">
-
-                    {/* EDIT BUTTON */}
                     <button
                       className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-1 rounded-lg shadow transition"
                       onClick={() => handleEdit(user)}
                     >
                       Modifier
                     </button>
-
-                    {/* DELETE BUTTON */}
                     <button
                       className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded-lg shadow transition"
                       onClick={() => handleDelete(user._id)}
                     >
                       Supprimer
                     </button>
-
                   </td>
                 </tr>
               ))
@@ -210,7 +187,6 @@ return (
           user={selectedUser}
           onClose={handleModalClose}
           onSubmit={handleSubmitUser}
-          
         />
       )}
     </div>

@@ -29,6 +29,9 @@ import NewReservation from "./pages/Reservations/NewReservation";
 import EditReservation from "./pages/Reservations/EditReservation";
 import History from "./pages/History/History";
 import NotFound from "./pages/OtherPage/NotFound";
+import AdminReservations from "./pages/Reservations/AdminReservations";
+import ForgotPassword from "./pages/AuthPages/ForgotPassword";
+import ResetPassword from "./pages/AuthPages/ResetPassword";
 
 export default function App() {
   return (
@@ -44,6 +47,8 @@ export default function App() {
           {/* PUBLIC ROUTES */}
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
 
           {/* PROTECTED LAYOUT */}
           <Route
@@ -119,6 +124,16 @@ export default function App() {
                 </RoleRoute>
               }
             />
+             <Route
+              path="/admin/reservations"
+              element={
+                <RoleRoute allowedRoles={["admin"]}>
+                  <AdminReservations />
+                </RoleRoute>
+              }
+            />
+            
+
             <Route
               path="reservations/new"
               element={

@@ -2,12 +2,10 @@ import { useState, useEffect } from 'react';
 import { User, UserFormData } from '../../types/user.types';
 
 interface UserModalProps {
-  isOpen: boolean;//est ce que lmodel yodhher wale
-  mode: "create" | "edit";//y7aded ken create wale modification
-  user: User | null; //null wa9t l mote create w user wa9t lmode update 
-  onClose: () => void; //tsaker lmodel 
-  //fonction tsir wa9t nenzel save  tab3eth data  ya (create ya edit) tab3eth post wale put
-  //  w traja3 promise khater tab9a testana f reponse m api
+  isOpen: boolean;
+  mode: "create" | "edit";
+  user: User | null;
+  onClose: () => void;
   onSubmit: (data: UserFormData) => Promise<void>;
 }
 
@@ -23,47 +21,45 @@ const UserModal = ({ isOpen, onClose, onSubmit, user, mode }: UserModalProps) =>
     motDePasse: ''
   });
 
+  // ⚡ Remplir correctement le formulaire en mode edit
   useEffect(() => {
-  if (isOpen && mode === "edit" && user) {
-    setFormData({
-      nom: user.nom,
-      prenom: user.prenom,
-      username: user.username,
-      email: user.email,
-      telephone: user.telephone || "",
-      role: user.role?._id || "",
-      statut: user.statut || "actif",
-      motDePasse: ""
-    });
-  }
+    if (!isOpen) return;
 
-  if (isOpen && mode === "create") {
-    setFormData({
-      nom: "",
-      prenom: "",
-      username: "",
-      email: "",
-      telephone: "",
-      role: "",
-      statut: "actif",
-      motDePasse: ""
-    });
-  }
-}, [isOpen, mode, user]);
+    if (mode === "edit" && user) {
+      setFormData({
+        nom: user.nom || "",
+        prenom: user.prenom || "",
+        username: user.username || "",
+        email: user.email || "",
+        telephone: user.telephone || "",
+        role: user.role && typeof user.role === "object" ? user.role.name : (user.role || ""),
+        statut: user.statut || "actif",
+        motDePasse: "" // toujours vide en edit
+      });
+    }
 
+    if (mode === "create") {
+      setFormData({
+        nom: "",
+        prenom: "",
+        username: "",
+        email: "",
+        telephone: "",
+        role: "",
+        statut: "actif",
+        motDePasse: ""
+      });
+    }
+  }, [isOpen, mode, user]);
 
-
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  await onSubmit(formData); 
-};
-
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    e.preventDefault();
+    await onSubmit(formData);
   };
 
   if (!isOpen) return null;
@@ -78,7 +74,7 @@ const UserModal = ({ isOpen, onClose, onSubmit, user, mode }: UserModalProps) =>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
 
-            {/* NOM & PRENOM */}
+            {/* Nom & Prénom */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block mb-1">Prénom *</label>
@@ -91,7 +87,6 @@ const UserModal = ({ isOpen, onClose, onSubmit, user, mode }: UserModalProps) =>
                   className="w-full border rounded p-2"
                 />
               </div>
-
               <div>
                 <label className="block mb-1">Nom *</label>
                 <input
@@ -105,7 +100,7 @@ const UserModal = ({ isOpen, onClose, onSubmit, user, mode }: UserModalProps) =>
               </div>
             </div>
 
-            {/* USERNAME */}
+            {/* Username */}
             <div>
               <label className="block mb-1">Nom d'utilisateur *</label>
               <input
@@ -118,7 +113,7 @@ const UserModal = ({ isOpen, onClose, onSubmit, user, mode }: UserModalProps) =>
               />
             </div>
 
-            {/* EMAIL */}
+            {/* Email */}
             <div>
               <label className="block mb-1">Email *</label>
               <input
@@ -131,7 +126,7 @@ const UserModal = ({ isOpen, onClose, onSubmit, user, mode }: UserModalProps) =>
               />
             </div>
 
-            {/* TELEPHONE */}
+            {/* Téléphone */}
             <div>
               <label className="block mb-1">Téléphone</label>
               <input
@@ -143,7 +138,7 @@ const UserModal = ({ isOpen, onClose, onSubmit, user, mode }: UserModalProps) =>
               />
             </div>
 
-            {/* ROLE & STATUT */}
+            {/* Rôle & Statut */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block mb-1">Rôle *</label>
@@ -176,12 +171,10 @@ const UserModal = ({ isOpen, onClose, onSubmit, user, mode }: UserModalProps) =>
               </div>
             </div>
 
-            {/* PASSWORD */}
+            {/* Mot de passe */}
             <div>
               <label className="block mb-1">
-                {mode === "create"
-                  ? "Mot de passe *"
-                  : "Mot de passe (optionnel)"}
+                {mode === "create" ? "Mot de passe *" : "Mot de passe (optionnel)"}
               </label>
               <input
                 type="password"
@@ -203,7 +196,6 @@ const UserModal = ({ isOpen, onClose, onSubmit, user, mode }: UserModalProps) =>
             >
               Annuler
             </button>
-
             <button
               type="submit"
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
