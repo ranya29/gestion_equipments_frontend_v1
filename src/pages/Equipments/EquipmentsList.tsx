@@ -7,7 +7,7 @@ interface Equipment {
   name: string;
   description: string;
   location: string;
-  status: "disponible" | "maintenance" | "hors service";
+  statut: "disponible" | "maintenance" | "hors service";
   capacity: number;
   photo?: string;
 }
@@ -20,7 +20,8 @@ const EquipmentsList = () => {
   useEffect(() => {
     api.get("/equipments")
       .then((res) => {
-        setEquipments(res.data);
+        console.log(res.data.data, "res res")
+        setEquipments(res.data.data);
         setLoading(false);
       })
       .catch((err) => {
@@ -29,16 +30,16 @@ const EquipmentsList = () => {
       });
   }, []);
 
-  const getStatusBadge = (status: Equipment["status"]) => {
-    const statusConfig = {
+  const getStatusBadge = (status: any) => {
+    const statusConfig:any = {
       disponible: { text: "Disponible", className: "bg-green-100 text-green-800" },
       maintenance: { text: "Maintenance", className: "bg-yellow-100 text-yellow-800" },
       "hors service": { text: "Hors service", className: "bg-red-100 text-red-800" },
     };
     const config = statusConfig[status];
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.className}`}>
-        {config.text}
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config?.className}`}>
+        {config?.text}
       </span>
     );
   };
@@ -70,13 +71,13 @@ const EquipmentsList = () => {
           </tr>
         </thead>
         <tbody>
-          {equipments.map((eq) => (
+          {equipments?.map((eq) => (
             <tr key={eq._id} className="border-b">
               <td className="px-4 py-2">{eq.name}</td>
               <td className="px-4 py-2">{eq.description}</td>
               <td className="px-4 py-2">{eq.location}</td>
               <td className="px-4 py-2">{eq.capacity}</td>
-              <td className="px-4 py-2">{getStatusBadge(eq.status)}</td>
+              <td className="px-4 py-2">{getStatusBadge(eq?.statut)}</td>
               <td className="px-4 py-2 flex gap-2">
                 <Link
                   to={`/equipments/${eq._id}`}
