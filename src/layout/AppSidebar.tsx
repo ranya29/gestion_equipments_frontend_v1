@@ -32,7 +32,7 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { icon: <GridIcon />, name: "Dashboard", path: "/" },
+  // { icon: <GridIcon />, name: "Dashboard", path: "/" },
   {
     icon: <BoxCubeIcon />,
     name: "Équipements",
@@ -65,23 +65,23 @@ const navItems: NavItem[] = [
 ];
 
 const othersItems: NavItem[] = [
-  {
-    icon: <PieChartIcon />,
-    name: "Statistiques",
-    subItems: [
-      { name: "Taux d'occupation", path: "/stats/occupation" },
-      { name: "Rapports", path: "/stats/reports" },
-    ],
-  },
-  { icon: <ListIcon />, name: "Paramètres", subItems: [{ name: "Configuration", path: "/settings" }] },
-  {
-    icon: <PlugInIcon />,
-    name: "Authentification",
-    subItems: [
-      { name: "Connexion", path: "/signin" },
-      { name: "Inscription", path: "/signup" },
-    ],
-  },
+  // {
+  //   icon: <PieChartIcon />,
+  //   name: "Statistiques",
+  //   subItems: [
+  //     { name: "Taux d'occupation", path: "/stats/occupation" },
+  //     { name: "Rapports", path: "/stats/reports" },
+  //   ],
+  // },
+  // { icon: <ListIcon />, name: "Paramètres", subItems: [{ name: "Configuration", path: "/settings" }] },
+  // {
+  //   icon: <PlugInIcon />,
+  //   name: "Authentification",
+  //   subItems: [
+  //     { name: "Connexion", path: "/signin" },
+  //     { name: "Inscription", path: "/signup" },
+  //   ],
+  // },
 ];
 
 const AppSidebar: React.FC = () => {
@@ -238,17 +238,15 @@ const AppSidebar: React.FC = () => {
       onMouseEnter={() => !isExpanded && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className={`py-8 flex ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"}`}>
-        <Link to="/">
+      <div className={` flex ${!isExpanded && !isHovered ? "sm:justify-center" : "justify-center"}`}>
           {isExpanded || isHovered || isMobileOpen ? (
             <>
-              <img className="dark:hidden" src="/images/logo/logo.svg" alt="Logo" width={150} height={40} />
-              <img className="hidden dark:block" src="/images/logo/logo-dark.svg" alt="Logo" width={150} height={40} />
+              <img className="dark:hidden" src="/images/logo/auth-logo.png" alt="Logo" width={150} height={40} />
+              <img className="hidden dark:block" src="/images/logo/auth-logo.png" alt="Logo" width={150} height={40} />
             </>
           ) : (
-            <img src="/images/logo/logo-icon.svg" alt="Logo" width={32} height={32} />
+            <img src="/images/logo/auth-logo.png" alt="Logo" width={32} height={32} />
           )}
-        </Link>
       </div>
       <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
         <nav className="mb-6">
@@ -260,9 +258,9 @@ const AppSidebar: React.FC = () => {
               {renderMenuItems(filterByRole(navItems), "main")}
             </div>
             <div>
-              <h2 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"}`}>
+              {/* <h2 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"}`}>
                 {isExpanded || isHovered || isMobileOpen ? "Autres" : <HorizontaLDots />}
-              </h2>
+              </h2> */}
               {renderMenuItems(filterByRole(othersItems), "others")}
             </div>
           </div>
