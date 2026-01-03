@@ -46,10 +46,9 @@ const navItems: NavItem[] = [
     name: "Réservations",
     subItems: [
       { name: "Calendrier", path: "/calendar" },
-      { name: "Mes réservations", path: "/reservations" },
-      //{ name: "Mes réservations", path: "/reservations", new: true },
-      //{ name: "Nouvelle réservation", path: "/reservations/new" },
-      //{ name: "Gérer les réservations", path: "/admin/reservations", pro: true },
+      { name: "Mes réservations", path: "/reservations", new: true },
+      { name: "Nouvelle réservation", path: "/reservations/new" },
+      { name: "Gérer les réservations", path: "/admin/reservations", pro: true },
 
     ],
   },
@@ -108,7 +107,7 @@ const AppSidebar: React.FC = () => {
       return items;
     }
 
-    const adminOnlyPaths = ["/users", "/equipments/add", "/history"];
+    const adminOnlyPaths = ["/users", "/equipments/add", "/history", "/admin/reservations"];
 
     return items
       .map((nav) => {

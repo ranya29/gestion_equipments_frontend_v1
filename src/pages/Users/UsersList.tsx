@@ -5,6 +5,7 @@ import UserModal from "../../components/Users/UserModal";
 
 const UsersList = () => {
   const [users, setUsers] = useState<User[]>([]);
+  const [filterStatus, setFilterStatus] = useState<"all" | "actif" | "inactif">("all");
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -15,7 +16,7 @@ const UsersList = () => {
     try {
       const data = await usersApi.getAll();
       setUsers(data);
-      setFilteredUsers(data);
+      filterUsers(data, filterStatus, search);
     } catch (error) {
       console.error("Erreur lors du chargement :", error);
     }
@@ -25,17 +26,36 @@ const UsersList = () => {
     fetchUsers();
   }, []);
 
+  const filterUsers = (usersList: User[], status: string, searchTerm: string) => {
+    let result = usersList;
+
+    if (status !== "all") {
+      result = result.filter((u) => u.statut === status);
+    }
+
+    if (searchTerm) {
+      result = result.filter(
+        (u) =>
+          u.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          u.prenom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          u.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          u.email?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    setFilteredUsers(result);
+  };
+
   // --- Recherche ---
   const handleSearch = (value: string) => {
     setSearch(value);
-    const filtered = users.filter(
-      (u) =>
-        u.nom?.toLowerCase().includes(value.toLowerCase()) ||
-        u.prenom?.toLowerCase().includes(value.toLowerCase()) ||
-        u.username?.toLowerCase().includes(value.toLowerCase()) ||
-        u.email?.toLowerCase().includes(value.toLowerCase())
-    );
-    setFilteredUsers(filtered);
+    filterUsers(users, filterStatus, value);
+  };
+
+  // --- Filtres par statut ---
+  const handleFilterStatus = (status: "all" | "actif" | "inactif") => {
+    setFilterStatus(status);
+    filterUsers(users, status, search);
   };
 
   const handleEdit = (user: User) => {
@@ -51,8 +71,7 @@ const UsersList = () => {
   const handleDelete = async (id: string) => {
     try {
       await usersApi.delete(id);
-      setUsers((prev) => prev.filter((u) => u._id !== id));
-      setFilteredUsers((prev) => prev.filter((u) => u._id !== id));
+      fetchUsers();
     } catch (error) {
       console.error("Erreur suppression :", error);
     }
@@ -65,39 +84,88 @@ const UsersList = () => {
 
   const handleSubmitUser = async (data: UserFormData) => {
     try {
-      let response;
-
       if (selectedUser) {
-        // MODE EDIT
         const payload: Partial<UserFormData> = { ...data };
         if (!payload.motDePasse) delete payload.motDePasse;
-        response = await usersApi.update(selectedUser._id, payload);
+        await usersApi.update(selectedUser._id, payload);
       } else {
-        // MODE CREATE
         const payload = {
           username: data.username || `${data.nom}.${data.prenom}`,
           email: data.email,
           password: data.motDePasse!,
           roleName: data.role
         };
-        response = await usersApi.register(payload);
+        await usersApi.register(payload);
       }
-
-      if (response) {
-        await fetchUsers();
-        handleModalClose();
-      }
+      await fetchUsers();
+      handleModalClose();
     } catch (error) {
       console.error("❌ Erreur API :", error);
     }
   };
 
-  return (
-    <div className="p-8 bg-gray-50 min-h-screen">
+  const stats = {
+    total: users.length,
+    actif: users.filter((u) => u.statut === "actif").length,
+    inactif: users.filter((u) => u.statut === "inactif").length,
+  };
 
-      {/* HEADER + SEARCH */}
-      <div className="flex justify-between items-center mb-6">
-        <div className="relative w-1/3">
+  const getStatusBadge = (status: string) => {
+    const config = {
+      actif: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+      inactif: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400",
+    };
+    return (
+      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${config[status]}`}>
+        {status}
+      </span>
+    );
+  };
+
+  return (
+    <div className="mx-auto max-w-7xl p-6">
+
+      {/* HEADER */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Gérer les Utilisateurs</h2>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          Ajouter, modifier ou supprimer des utilisateurs
+        </p>
+      </div>
+
+      {/* Stats */}
+      <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total</p>
+          <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Actifs</p>
+          <p className="mt-2 text-3xl font-bold text-green-600 dark:text-green-400">{stats.actif}</p>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Inactifs</p>
+          <p className="mt-2 text-3xl font-bold text-gray-600 dark:text-gray-400">{stats.inactif}</p>
+        </div>
+      </div>
+
+      {/* Filters + Search */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        {["all", "actif", "inactif"].map((status) => (
+          <button
+            key={status}
+            onClick={() => handleFilterStatus(status as any)}
+            className={`rounded-lg px-4 py-2 text-sm font-medium ${
+              filterStatus === status
+                ? "bg-brand-500 text-white"
+                : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+            }`}
+          >
+            {status === "all" ? "Tous" : status.charAt(0).toUpperCase() + status.slice(1)}
+          </button>
+        ))}
+
+        <div className="ml-auto relative w-1/3">
           <input
             type="text"
             placeholder="🔍 Rechercher un utilisateur…"
@@ -115,71 +183,60 @@ const UsersList = () => {
         </button>
       </div>
 
-      {/* TABLE */}
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-gray-100 text-left text-gray-700">
-              <th className="p-3 border-b">Nom</th>
-              <th className="p-3 border-b">Prénom</th>
-              <th className="p-3 border-b">Username</th>
-              <th className="p-3 border-b">Email</th>
-              <th className="p-3 border-b">Téléphone</th>
-              <th className="p-3 border-b">Statut</th>
-              <th className="p-3 border-b">Rôle</th>
-              <th className="p-3 border-b text-center">Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {filteredUsers.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="p-6 text-center text-gray-500">
-                  Aucun utilisateur trouvé
-                </td>
-              </tr>
-            ) : (
-              filteredUsers.map((user) => (
-                <tr key={user._id} className="hover:bg-gray-50 transition border-b">
-                  <td className="p-3">{user.nom || "—"}</td>
-                  <td className="p-3">{user.prenom || "—"}</td>
-                  <td className="p-3">{user.username || "—"}</td>
-                  <td className="p-3">{user.email}</td>
-                  <td className="p-3">{user.telephone || "Non renseigné"}</td>
-                  <td className="p-3 capitalize">
-                    <span
-                      className={`px-2 py-1 rounded text-white text-sm ${
-                        user.statut === "actif" ? "bg-green-500" : "bg-gray-400"
-                      }`}
-                    >
-                      {user.statut}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    {typeof user.role === "string" ? user.role : user.role?.name}
-                  </td>
-                  <td className="p-3 flex gap-3 justify-center">
-                    <button
-                      className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-1 rounded-lg shadow transition"
-                      onClick={() => handleEdit(user)}
-                    >
-                      Modifier
-                    </button>
-                    <button
-                      className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded-lg shadow transition"
-                      onClick={() => handleDelete(user._id)}
-                    >
-                      Supprimer
-                    </button>
-                  </td>
+      {/* Table */}
+      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+        {filteredUsers.length === 0 ? (
+          <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+            Aucun utilisateur trouvé
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-gray-500 dark:text-gray-400">
+              <thead className="bg-gray-50 text-xs uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-400">
+                <tr>
+                  <th className="px-6 py-3">Nom</th>
+                  <th className="px-6 py-3">Prénom</th>
+                  <th className="px-6 py-3">Username</th>
+                  <th className="px-6 py-3">Email</th>
+                  <th className="px-6 py-3">Téléphone</th>
+                  <th className="px-6 py-3">Statut</th>
+                  <th className="px-6 py-3">Rôle</th>
+                  <th className="px-6 py-3 text-center">Actions</th>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              </thead>
+              <tbody>
+                {filteredUsers.map((user) => (
+                  <tr key={user._id} className="border-b bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700">
+                    <td className="px-6 py-4">{user.nom || "—"}</td>
+                    <td className="px-6 py-4">{user.prenom || "—"}</td>
+                    <td className="px-6 py-4">{user.username || "—"}</td>
+                    <td className="px-6 py-4">{user.email}</td>
+                    <td className="px-6 py-4">{user.telephone || "—"}</td>
+                    <td className="px-6 py-4">{getStatusBadge(user.statut)}</td>
+                    <td className="px-6 py-4">{typeof user.role === "string" ? user.role : user.role?.name}</td>
+                    <td className="px-6 py-4 flex gap-2 justify-center">
+                      <button
+                        onClick={() => handleEdit(user)}
+                        className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium"
+                      >
+                        Modifier
+                      </button>
+                      <button
+                        onClick={() => handleDelete(user._id)}
+                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium"
+                      >
+                        Supprimer
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* MODAL */}
+      {/* Modal */}
       {isModalOpen && (
         <UserModal
           isOpen={isModalOpen}
