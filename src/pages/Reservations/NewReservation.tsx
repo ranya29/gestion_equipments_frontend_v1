@@ -2,6 +2,7 @@
 import { useState, ChangeEvent, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import api from "../../axios";
 
 const NewReservation: React.FC<{ onClose: () => void, getAllRéservations: () => void }> = ({ onClose, getAllRéservations }) => {
   const [equipment, setEquipment] = useState<string>("");
@@ -67,6 +68,13 @@ const NewReservation: React.FC<{ onClose: () => void, getAllRéservations: () =>
       }
 
       if (hasError) return;
+       console.log("=== DONNÉES ENVOYÉES ===");
+       console.log("equipmentId:", equipment);
+       console.log("quantity:", quantity);
+       console.log("startDate:", startTime);
+       console.log("endDate:", endTime);
+       console.log("description:", descreption);
+       console.log("Token:", localStorage.getItem("token"));
 
       // POST seulement si tout est OK
       const res = await api.post(

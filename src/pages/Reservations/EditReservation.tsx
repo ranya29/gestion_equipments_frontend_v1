@@ -1,9 +1,14 @@
-//Reservations/EditReservation.tsx
+// Reservations/EditReservation.tsx
 import { useState, ChangeEvent, useEffect } from "react";
 import { toast } from "react-toastify";
 import api from "../../axios";
 
-const EditReservation: React.FC<{ reservation: any, onClose: () => void, getAllRéservations: () => void, disabled?: boolean }> = ({ reservation, onClose, getAllRéservations, disabled = false }) => {
+const EditReservation: React.FC<{
+  reservation: any;
+  onClose: () => void;
+  getAllRéservations: () => void;
+  disabled?: boolean;
+}> = ({ reservation, onClose, getAllRéservations, disabled = false }) => {
   const isDisabled = Boolean(disabled);
   const [equipment, setEquipment] = useState<string>("");
   const [quantity, setQuantity] = useState<number>(1);
@@ -31,20 +36,18 @@ const EditReservation: React.FC<{ reservation: any, onClose: () => void, getAllR
     return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
   };
 
-  // Récupération de l'équipement sélectionné
+  // Équipement sélectionné
   const selectedEquipment = listEquipements.find((e) => e._id === equipment);
   const maxCapacity = selectedEquipment ? selectedEquipment.capacite.valeur : null;
   const capacityUnit = selectedEquipment ? selectedEquipment.capacite.unite : "";
 
   // Charger la réservation existante
   const fetchReservation = () => {
-
-      setEquipment(reservation?.equipment?._id);
-      setQuantity(reservation?.quantity);
-      setStartTime(formatDateForInput(reservation?.startDate));
-      setEndTime(formatDateForInput(reservation?.endDate));
-      setDescreption(reservation?.description
-);
+    setEquipment(reservation?.equipment?._id);
+    setQuantity(reservation?.quantity);
+    setStartTime(formatDateForInput(reservation?.startDate));
+    setEndTime(formatDateForInput(reservation?.endDate));
+    setDescreption(reservation?.description);
   };
 
   // Charger tous les équipements
@@ -58,59 +61,48 @@ const EditReservation: React.FC<{ reservation: any, onClose: () => void, getAllR
   };
 
   useEffect(() => {
-    console.log(reservation, "reservation")
     getAllEquipments();
     fetchReservation();
   }, [reservation]);
 
+  // Modifier la réservation
   const onFinish = async () => {
     try {
       let hasError = false;
 
-      // Validation équipement
       if (!equipment.trim()) {
         setEquipmentError("Veuillez sélectionner un équipement.");
         hasError = true;
-      } else {
-        setEquipmentError("");
-      }
+      } else setEquipmentError("");
 
-      // Validation quantité
       if (quantity <= 0 || isNaN(quantity)) {
         setQuantityError("La quantité doit être un nombre supérieur à 0.");
         hasError = true;
       } else if (maxCapacity !== null && quantity > maxCapacity) {
-        setQuantityError(`La quantité maximale pour cet équipement est ${maxCapacity} ${capacityUnit}.`);
+        setQuantityError(
+          `La quantité maximale pour cet équipement est ${maxCapacity} ${capacityUnit}.`
+        );
         hasError = true;
-      } else {
-        setQuantityError("");
-      }
+      } else setQuantityError("");
 
-      // Validation temps
       if (!startTime || !endTime) {
         setTimeError("Veuillez entrer les heures de début et de fin.");
         hasError = true;
       } else if (new Date(endTime) <= new Date(startTime)) {
         setTimeError("L'heure de fin doit être après l'heure de début.");
         hasError = true;
-      } else {
-        setTimeError("");
-      }
+      } else setTimeError("");
 
-      // Validation description
       if (!descreption?.trim()) {
         setDescriptionError("Veuillez entrer une description.");
         hasError = true;
       } else if (descreption?.length > 500) {
         setDescriptionError("La description ne peut pas dépasser 500 caractères.");
         hasError = true;
-      } else {
-        setDescriptionError("");
-      }
+      } else setDescriptionError("");
 
       if (hasError) return;
 
-      // PUT pour modification
       const res = await api.put(
         `/api/reservations/${reservation?._id}`,
         {
@@ -131,170 +123,193 @@ const EditReservation: React.FC<{ reservation: any, onClose: () => void, getAllR
       toast.success(res.data.message);
       getAllRéservations();
       onClose();
-      console.log("Réservation modifiée :", res.data);
     } catch (error: any) {
       console.error("Erreur lors de la modification :", error);
       toast.error(
-        error.response?.data?.message || "Erreur lors de la modification de la réservation."
+        error.response?.data?.message ||
+          "Erreur lors de la modification de la réservation."
       );
     }
   };
 
+  // ====== NOUVEAU : Supprimer la réservation ======
+  const handleDelete = async () => {
+    if (!reservation?._id) return;
+    if (!window.confirm("Voulez-vous vraiment supprimer cette réservation ?")) return;
+
+    try {
+      await api.delete(`/api/reservations/${reservation._id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      toast.success("Réservation supprimée avec succès !");
+      getAllRéservations();
+      onClose();
+    } catch (error: any) {
+      console.error("Erreur suppression réservation :", error);
+      toast.error(
+        error.response?.data?.message || "Impossible de supprimer la réservation."
+      );
+    }
+  };
+  // ================================================
+
   return (
-    <>
+    <form className="space-y-5">
+      {/* Équipement */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Équipement
+        </label>
+        <select
+          name="equipment"
+          value={equipment}
+          disabled={isDisabled}
+          onChange={(e: ChangeEvent<HTMLSelectElement>) => {
+            if (isDisabled) return;
+            setEquipmentError("");
+            setEquipment(e.target.value);
+            setQuantity(1);
+            setQuantityError("");
+          }}
+          className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          required
+        >
+          <option value="">Sélectionner un équipement</option>
+          {listEquipements.map((equip) => (
+            <option key={equip._id} value={equip._id}>
+              {equip.nom}
+            </option>
+          ))}
+        </select>
+        {equipmentError && (
+          <span className="text-red-500 text-sm mt-1">{equipmentError}</span>
+        )}
+      </div>
 
-      <form className="space-y-5">
-        {/* Équipement */}
+      {/* Quantité */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Quantité
+        </label>
+        <input
+          type="number"
+          name="quantity"
+          value={quantity}
+          min={1}
+          max={maxCapacity ?? undefined}
+          disabled={isDisabled || !selectedEquipment}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => {
+            if (isDisabled) return;
+            const val = parseInt(e.target.value, 10);
+            setQuantity(val);
+
+            if (val <= 0 || isNaN(val)) {
+              setQuantityError("La quantité doit être un nombre supérieur à 0.");
+            } else if (maxCapacity !== null && val > maxCapacity) {
+              setQuantityError(
+                `La quantité maximale pour cet équipement est ${maxCapacity} ${capacityUnit}.`
+              );
+            } else setQuantityError("");
+          }}
+          className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          required
+        />
+        {maxCapacity !== null && quantity >= maxCapacity && (
+          <p className="text-sm text-gray-500 mt-1">
+            Capacité maximale : {maxCapacity} {capacityUnit}
+          </p>
+        )}
+        {quantityError && (
+          <span className="text-red-500 text-sm mt-1">{quantityError}</span>
+        )}
+      </div>
+
+      {/* Dates */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Équipement
-          </label>
-          <select
-            name="equipment"
-            value={equipment}
-            disabled={isDisabled}
-            onChange={(e: ChangeEvent<HTMLSelectElement>) => {
-              if (isDisabled) return;
-              setEquipmentError("");
-              setEquipment(e.target.value);
-              setQuantity(1);
-              setQuantityError("");
-            }}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            required
-          >
-            <option value="">Sélectionner un équipement</option>
-            {listEquipements.map((equip) => (
-              <option key={equip._id} value={equip._id}>
-                {equip.nom}
-              </option>
-            ))}
-          </select>
-          {equipmentError && (
-            <span className="text-red-500 text-sm mt-1">{equipmentError}</span>
-          )}
-        </div>
-
-        {/* Quantité */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Quantité
+            Date de début
           </label>
           <input
-            type="number"
-            name="quantity"
-            value={quantity}
-            min={1}
-            max={maxCapacity ?? undefined}
-            disabled={isDisabled || !selectedEquipment}
+            type="datetime-local"
+            name="startDate"
+            value={startTime}
+            disabled={isDisabled}
             onChange={(e: ChangeEvent<HTMLInputElement>) => {
               if (isDisabled) return;
-              const val = parseInt(e.target.value, 10);
-              setQuantity(val);
-
-              if (val <= 0 || isNaN(val)) {
-                setQuantityError("La quantité doit être un nombre supérieur à 0.");
-              } else if (maxCapacity !== null && val > maxCapacity) {
-                setQuantityError(`La quantité maximale pour cet équipement est ${maxCapacity} ${capacityUnit}.`);
-              } else {
-                setQuantityError("");
-              }
+              setTimeError("");
+              setStartTime(e.target.value);
             }}
             className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             required
           />
-          {maxCapacity !== null && quantity >= maxCapacity && (
-            <p className="text-sm text-gray-500 mt-1">
-              Capacité maximale : {maxCapacity} {capacityUnit}
-            </p>
-          )}
-          {quantityError && (
-            <span className="text-red-500 text-sm mt-1">{quantityError}</span>
-          )}
         </div>
-
-        {/* Dates */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date de début
-            </label>
-            <input
-              type="datetime-local"
-              name="startDate"
-              value={startTime}
-              disabled={isDisabled}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                if (isDisabled) return;
-                setTimeError("");
-                setStartTime(e.target.value);
-              }}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date de fin
-            </label>
-            <input
-              type="datetime-local"
-              name="endDate"
-              value={endTime}
-              disabled={isDisabled}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                if (isDisabled) return;
-                setTimeError("");
-                setEndTime(e.target.value);
-              }}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              required
-            />
-          </div>
-        </div>
-        {timeError && <span className="text-red-500 text-sm mt-1">{timeError}</span>}
-
-        {/* Description */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description
+            Date de fin
           </label>
-          <textarea
-            name="descreption"
-            value={descreption}
+          <input
+            type="datetime-local"
+            name="endDate"
+            value={endTime}
             disabled={isDisabled}
-            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
+            onChange={(e: ChangeEvent<HTMLInputElement>) => {
               if (isDisabled) return;
-              setDescriptionError("");
-              setDescreption(e.target.value);
+              setTimeError("");
+              setEndTime(e.target.value);
             }}
-            rows={4}
-            placeholder="Indiquez la description de réservation"
             className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            required
           />
-          {descriptionError && (
-            <span className="text-red-500 text-sm mt-1">{descriptionError}</span>
-          )}
         </div>
+      </div>
+      {timeError && <span className="text-red-500 text-sm mt-1">{timeError}</span>}
 
-        {/* Boutons */}
-        <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={() => onClose()}
-            className="px-5 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
-          >
-            Annuler
-          </button>
-          {isDisabled ? (
+      {/* Description */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Description
+        </label>
+        <textarea
+          name="descreption"
+          value={descreption}
+          disabled={isDisabled}
+          onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
+            if (isDisabled) return;
+            setDescriptionError("");
+            setDescreption(e.target.value);
+          }}
+          rows={4}
+          placeholder="Indiquez la description de réservation"
+          className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+        />
+        {descriptionError && (
+          <span className="text-red-500 text-sm mt-1">{descriptionError}</span>
+        )}
+      </div>
+
+      {/* Boutons */}
+      <div className="flex justify-end gap-3">
+        <button
+          type="button"
+          onClick={() => onClose()}
+          className="px-5 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+        >
+          Annuler
+        </button>
+
+        {!isDisabled && (
+          <>
             <button
               type="button"
-              onClick={() => onClose()}
-              className="px-5 py-2 rounded-lg bg-gray-500 text-white hover:bg-gray-600"
+              onClick={handleDelete}
+              className="px-5 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
             >
-              Fermer
+              Supprimer
             </button>
-          ) : (
+
             <button
               type="button"
               onClick={onFinish}
@@ -302,10 +317,20 @@ const EditReservation: React.FC<{ reservation: any, onClose: () => void, getAllR
             >
               Modifier
             </button>
-          )}
-        </div>
-      </form>
-    </>
+          </>
+        )}
+
+        {isDisabled && (
+          <button
+            type="button"
+            onClick={() => onClose()}
+            className="px-5 py-2 rounded-lg bg-gray-500 text-white hover:bg-gray-600"
+          >
+            Fermer
+          </button>
+        )}
+      </div>
+    </form>
   );
 };
 

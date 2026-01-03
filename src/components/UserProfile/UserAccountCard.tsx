@@ -1,4 +1,4 @@
-//UserAccountCard.tsx
+//components/UserProfile/UserAccountCard.tsx
 import { useState } from "react";
 import { useModal } from "../../hooks/useModal";
 import { Modal } from "../ui/modal";
