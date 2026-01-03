@@ -1,4 +1,4 @@
-//UserInfoCard.tsx
+// UserInfoCard.tsx
 import { useState, useEffect, ChangeEvent } from "react";
 import { useModal } from "../../hooks/useModal";
 import { Modal } from "../ui/modal";
@@ -7,12 +7,12 @@ import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL; // ← AJOUTÉ
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function UserInfoCard() {
   const { isOpen, openModal, closeModal } = useModal();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null); // ← TypeScript
+  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   
   const [profileData, setProfileData] = useState({
@@ -33,7 +33,7 @@ export default function UserInfoCard() {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/api/profile`, { // ← MODIFIÉ
+      const response = await axios.get(`${API_URL}/api/profile`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -44,14 +44,14 @@ export default function UserInfoCard() {
         setProfileData(data);
         setFormData(data);
       }
-    } catch (err: any) { // ← TypeScript
+    } catch (err: any) {
       setError(err.response?.data?.message || "Erreur lors du chargement");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => { // ← TypeScript
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -65,7 +65,7 @@ export default function UserInfoCard() {
       setError(null);
       setSuccess(false);
 
-      const response = await axios.put(`${API_URL}/api/profile`, formData, { // ← MODIFIÉ
+      const response = await axios.put(`${API_URL}/api/profile`, formData, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
@@ -73,14 +73,16 @@ export default function UserInfoCard() {
       });
 
       if (response.data.success) {
-        setProfileData(response.data.data);
+        // ⚡ Met à jour le profileData pour affichage immédiat
+        setProfileData(formData); 
         setSuccess(true);
+
         setTimeout(() => {
           setSuccess(false);
           closeModal();
         }, 1500);
       }
-    } catch (err: any) { // ← TypeScript
+    } catch (err: any) {
       setError(err.response?.data?.message || "Erreur lors de la sauvegarde");
     } finally {
       setLoading(false);
@@ -88,7 +90,7 @@ export default function UserInfoCard() {
   };
 
   const handleModalClose = () => {
-    setFormData(profileData);
+    // On ne réinitialise plus formData à profileData pour éviter de perdre les modifications affichées
     setError(null);
     setSuccess(false);
     closeModal();
