@@ -14,7 +14,7 @@ const EditReservation: React.FC<{
   const [quantity, setQuantity] = useState<number>(1);
   const [startTime, setStartTime] = useState<string>("");
   const [endTime, setEndTime] = useState<string>("");
-  const [descreption, setDescreption] = useState<string>("");
+  const [description, setDescription] = useState<string>("");
   const [listEquipements, setListEquipements] = useState<Array<any>>([]);
 
   const [equipmentError, setEquipmentError] = useState("");
@@ -47,7 +47,7 @@ const EditReservation: React.FC<{
     setQuantity(reservation?.quantity);
     setStartTime(formatDateForInput(reservation?.startDate));
     setEndTime(formatDateForInput(reservation?.endDate));
-    setDescreption(reservation?.description);
+    setDescription(reservation?.description);
   };
 
   // Charger tous les équipements
@@ -67,10 +67,16 @@ const EditReservation: React.FC<{
 
   // Modifier la réservation
   const onFinish = async () => {
+    // Check if reservation can be edited
+    if (reservation?.status !== "pending") {
+      toast.error(`Impossible de modifier une réservation ${reservation?.status}.`);
+      return;
+    }
+
     try {
       let hasError = false;
 
-      if (!equipment.trim()) {
+      if (!equipment) {
         setEquipmentError("Veuillez sélectionner un équipement.");
         hasError = true;
       } else setEquipmentError("");
@@ -93,38 +99,42 @@ const EditReservation: React.FC<{
         hasError = true;
       } else setTimeError("");
 
-      if (!descreption?.trim()) {
+      if (!description?.trim()) {
         setDescriptionError("Veuillez entrer une description.");
         hasError = true;
-      } else if (descreption?.length > 500) {
+      } else if (description?.length > 500) {
         setDescriptionError("La description ne peut pas dépasser 500 caractères.");
         hasError = true;
       } else setDescriptionError("");
 
       if (hasError) return;
 
+      // Convertir les dates correctement (datetime-local preserves local time)
+      const startDate = new Date(startTime);
+      const endDate = new Date(endTime);
+
+      const payload = {
+        equipmentId: equipment,
+        quantity,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        description: description,
+      };
+
+      console.log("=== MISE À JOUR RÉSERVATION ===");
+      console.log("Payload:", JSON.stringify(payload, null, 2));
+      console.log("Reservation status:", reservation?.status);
+
       const res = await api.put(
-        `/api/reservations/${reservation?._id}`,
-        {
-          equipmentId: equipment,
-          quantity,
-          startDate: startTime ? new Date(startTime).toISOString() : null,
-          endDate: endTime ? new Date(endTime).toISOString() : null,
-          description: descreption,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json",
-          },
-        }
+        `/reservations/${reservation?._id}`,
+        payload
       );
 
       toast.success(res.data.message);
       getAllRéservations();
       onClose();
     } catch (error: any) {
-      console.error("Erreur lors de la modification :", error);
+      console.error("Erreur lors de la modification :", error.response?.data || error.message);
       toast.error(
         error.response?.data?.message ||
           "Erreur lors de la modification de la réservation."
@@ -138,11 +148,7 @@ const EditReservation: React.FC<{
     if (!window.confirm("Voulez-vous vraiment supprimer cette réservation ?")) return;
 
     try {
-      await api.delete(`/api/reservations/${reservation._id}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      await api.delete(`/reservations/${reservation._id}`);
       toast.success("Réservation supprimée avec succès !");
       getAllRéservations();
       onClose();
@@ -239,7 +245,6 @@ const EditReservation: React.FC<{
             disabled={isDisabled}
             onChange={(e: ChangeEvent<HTMLInputElement>) => {
               if (isDisabled) return;
-              setTimeError("");
               setStartTime(e.target.value);
             }}
             className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
@@ -257,7 +262,6 @@ const EditReservation: React.FC<{
             disabled={isDisabled}
             onChange={(e: ChangeEvent<HTMLInputElement>) => {
               if (isDisabled) return;
-              setTimeError("");
               setEndTime(e.target.value);
             }}
             className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
@@ -273,13 +277,12 @@ const EditReservation: React.FC<{
           Description
         </label>
         <textarea
-          name="descreption"
-          value={descreption}
+          name="description"
+          value={description}
           disabled={isDisabled}
           onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
             if (isDisabled) return;
-            setDescriptionError("");
-            setDescreption(e.target.value);
+            setDescription(e.target.value);
           }}
           rows={4}
           placeholder="Indiquez la description de réservation"
@@ -300,7 +303,7 @@ const EditReservation: React.FC<{
           Annuler
         </button>
 
-        {!isDisabled && (
+        {reservation?.status === "pending" && !isDisabled && (
           <>
             <button
               type="button"
@@ -320,7 +323,13 @@ const EditReservation: React.FC<{
           </>
         )}
 
-        {isDisabled && (
+        {reservation?.status !== "pending" && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2 text-yellow-800 text-sm">
+            Cette réservation a le statut "{reservation?.status}" et ne peut pas être modifiée.
+          </div>
+        )}
+
+        {isDisabled && reservation?.status === "pending" && (
           <button
             type="button"
             onClick={() => onClose()}

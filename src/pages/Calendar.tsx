@@ -122,7 +122,9 @@ const Calendar: React.FC = () => {
     api
       .get("/reservations", { params })
       .then((res) => {
-        const formattedEvents = res?.data?.reservations?.map(
+        const formattedEvents = res?.data?.reservations
+          ?.filter((reservation: any) => reservation.status === "approved")
+          ?.map(
           (reservation: any) => {
             const equipmentName =
               reservation.equipment?.nom || "Équipement non spécifié";

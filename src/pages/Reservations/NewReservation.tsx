@@ -1,6 +1,5 @@
 //Reservations/NewReservation.tsx
 import { useState, ChangeEvent, useEffect } from "react";
-import axios from "axios";
 import { toast } from "react-toastify";
 import api from "../../axios";
 
@@ -9,7 +8,7 @@ const NewReservation: React.FC<{ onClose: () => void, getAllRéservations: () =>
   const [quantity, setQuantity] = useState<number>(1);
   const [startTime, setStartTime] = useState<string>("");
   const [endTime, setEndTime] = useState<string>("");
-  const [descreption, setDescreption] = useState<string>("");
+  const [description, setDescription] = useState<string>("");
   const [listEquipements, setListEquipements] = useState<Array<any>>([]);
 
   const [equipmentError, setEquipmentError] = useState("");
@@ -27,7 +26,7 @@ const NewReservation: React.FC<{ onClose: () => void, getAllRéservations: () =>
       let hasError = false;
 
       // Validation équipement
-      if (!equipment.trim()) {
+      if (!equipment) {
         setEquipmentError("Veuillez sélectionner un équipement.");
         hasError = true;
       } else {
@@ -46,10 +45,17 @@ const NewReservation: React.FC<{ onClose: () => void, getAllRéservations: () =>
       }
 
       // Validation temps
+      const now = new Date();
+      const startDate = new Date(startTime);
+      const endDate = new Date(endTime);
+
       if (!startTime || !endTime) {
         setTimeError("Veuillez entrer les heures de début et de fin.");
         hasError = true;
-      } else if (new Date(endTime) <= new Date(startTime)) {
+      } else if (startDate < now) {
+        setTimeError("La date de début doit être dans le futur.");
+        hasError = true;
+      } else if (endDate <= startDate) {
         setTimeError("L'heure de fin doit être après l'heure de début.");
         hasError = true;
       } else {
@@ -57,10 +63,10 @@ const NewReservation: React.FC<{ onClose: () => void, getAllRéservations: () =>
       }
 
       // Validation description
-      if (!descreption.trim()) {
+      if (!description.trim()) {
         setDescriptionError("Veuillez entrer une description.");
         hasError = true;
-      } else if (descreption.length > 500) {
+      } else if (description.length > 500) {
         setDescriptionError("La description ne peut pas dépasser 500 caractères.");
         hasError = true;
       } else {
@@ -68,29 +74,16 @@ const NewReservation: React.FC<{ onClose: () => void, getAllRéservations: () =>
       }
 
       if (hasError) return;
-       console.log("=== DONNÉES ENVOYÉES ===");
-       console.log("equipmentId:", equipment);
-       console.log("quantity:", quantity);
-       console.log("startDate:", startTime);
-       console.log("endDate:", endTime);
-       console.log("description:", descreption);
-       console.log("Token:", localStorage.getItem("token"));
 
       // POST seulement si tout est OK
       const res = await api.post(
-        "/api/reservations",
+        "/reservations",
         {
           equipmentId: equipment,
           quantity,
           startDate: startTime,
           endDate: endTime,
-          description: descreption,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json",
-          },
+          description: description,
         }
       );
 
@@ -108,10 +101,11 @@ const NewReservation: React.FC<{ onClose: () => void, getAllRéservations: () =>
 
   const getAllEquipments = async () => {
     try {
-      const res = await axios.get("http://localhost:3000/api/equipments");
+      const res = await api.get("/equipments");
       setListEquipements(res.data.data);
     } catch (error) {
       console.error("Erreur lors de la récupération des équipements :", error);
+      toast.error("Erreur lors de la récupération des équipements.");
     }
   };
 
@@ -199,7 +193,6 @@ const NewReservation: React.FC<{ onClose: () => void, getAllRéservations: () =>
               name="startDate"
               value={startTime}
               onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                setTimeError("");
                 setStartTime(e.target.value);
               }}
               className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
@@ -215,7 +208,6 @@ const NewReservation: React.FC<{ onClose: () => void, getAllRéservations: () =>
               name="endDate"
               value={endTime}
               onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                setTimeError("");
                 setEndTime(e.target.value);
               }}
               className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
@@ -231,11 +223,10 @@ const NewReservation: React.FC<{ onClose: () => void, getAllRéservations: () =>
             Description
           </label>
           <textarea
-            name="descreption"
-            value={descreption}
+            name="description"
+            value={description}
             onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
-              setDescriptionError("");
-              setDescreption(e.target.value);
+              setDescription(e.target.value);
             }}
             rows={4}
             placeholder="Indiquez la description de réservation"
