@@ -1,12 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { X } from 'lucide-react';
 import { equipmentApi } from '../../api/equipmentApi';
 import { 
   EquipmentFormData,
   EQUIPMENT_TYPES,
   EQUIPMENT_LOCALISATIONS,
-  CAPACITY_UNITS,
-  DAYS_OF_WEEK
+  CAPACITY_UNITS
 } from '../../types/equipment';
 
 interface EquipmentFormModalProps {

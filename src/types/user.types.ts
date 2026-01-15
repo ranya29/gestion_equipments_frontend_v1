@@ -48,9 +48,13 @@ export interface UpdateUserDTO {
   role?: string;
 }
 export interface UserRegisterPayload {
+  nom: string;
+  prenom: string;
   username: string;
   email: string;
   password: string;
+  telephone?: string;
+  statut?: "actif" | "inactif";
   roleName: string;
 }
 

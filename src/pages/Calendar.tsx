@@ -13,11 +13,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { useModal } from "../hooks/useModal";
 import Modal from "../components/common/Modal";
 import { useAuth } from "../context/AuthContext";
-import { toast } from "react-toastify";
 import NewReservation from "./Reservations/NewReservation";
 import EditReservation from "./Reservations/EditReservation";
 import api from "../axios";
-import axios from "axios";
 import {
   BoxesIcon,
   CalendarClock,
@@ -167,7 +165,7 @@ const Calendar: React.FC = () => {
   }, [selectedEquipment, filterStartDate, filterEndDate, showAvailableOnly]);
 
   // Sélection d'une date pour ajouter un événement
-  const handleDateSelect = (selectInfo: DateSelectArg) => {
+  const handleDateSelect = (_selectInfo: DateSelectArg) => {
     resetModalFields();
     setDisabledEdit(false);
     openModal();
@@ -197,9 +195,10 @@ const Calendar: React.FC = () => {
         )
       );
       return decoded.id || decoded._id || decoded.userId || null;
-    } catch (e) {
-      return null;
-    }
+    } catch (err) {
+        console.error("Token decode error:", err);
+        return null;
+      }
   };
 
   const handleEventClick = (clickInfo: EventClickArg) => {

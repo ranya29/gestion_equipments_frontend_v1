@@ -1,91 +1,68 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import api from "../../services/api";
 
 // Types
 interface HistoryRecord {
-  id: number;
+  id: string;
   equipmentName: string;
+  equipmentCode?: string;
   userName: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  duration: number; // en heures
-  status: "completed" | "cancelled" | "noshow";
-}
+  userId?: string;
+  createdAt?: string;
+  date?: string; // startDate
+  endDate?: string; // endDate
+  startTime?: string;
+  endTime?: string;
+  duration?: number; // in hours
+  status: "approved" | "rejected" | "pending";
+  validatedBy?: string;
+  validatedAt?: string;
+}  
 
 const History = () => {
-  // Données exemple - À remplacer par un appel API
-  const [history] = useState<HistoryRecord[]>([
-    {
-      id: 1,
-      equipmentName: "Microscope électronique",
-      userName: "Ahmed Ben Ali",
-      date: "2024-11-15",
-      startTime: "09:00",
-      endTime: "11:00",
-      duration: 2,
-      status: "completed",
-    },
-    {
-      id: 2,
-      equipmentName: "Imprimante 3D",
-      userName: "Fatma Karim",
-      date: "2024-11-14",
-      startTime: "14:00",
-      endTime: "16:00",
-      duration: 2,
-      status: "completed",
-    },
-    {
-      id: 3,
-      equipmentName: "Spectromètre",
-      userName: "Mohamed Salah",
-      date: "2024-11-13",
-      startTime: "10:00",
-      endTime: "12:00",
-      duration: 2,
-      status: "cancelled",
-    },
-    {
-      id: 4,
-      equipmentName: "Scanner 3D",
-      userName: "Leila Mansour",
-      date: "2024-11-12",
-      startTime: "15:00",
-      endTime: "17:00",
-      duration: 2,
-      status: "completed",
-    },
-    {
-      id: 5,
-      equipmentName: "Microscope électronique",
-      userName: "Youssef Trabelsi",
-      date: "2024-11-11",
-      startTime: "08:00",
-      endTime: "10:00",
-      duration: 2,
-      status: "noshow",
-    },
-  ]);
+  const [history, setHistory] = useState<HistoryRecord[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [dateFilter, setDateFilter] = useState({
-    start: "",
-    end: "",
-  });
+  // Filters removed — history shows all reservations by default
+
+  // Robust duration calculation (hours) with safeguards for bad data/timezone issues
+  const computeDurationHours = (startStr?: string | null, endStr?: string | null) => {
+    if (!startStr || !endStr) return 0;
+    const start = new Date(startStr);
+    const end = new Date(endStr);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0;
+
+    let diffH = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+
+    // If negative due to timezone issues, take absolute
+    if (diffH < 0) diffH = Math.abs(diffH);
+
+    // If the difference is unreasonably large (e.g., > 31 days), fallback to day-based calculation
+    if (diffH > 24 * 31) {
+      const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+      const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+      const diffDays = Math.round((endDay.getTime() - startDay.getTime()) / (1000 * 60 * 60 * 24));
+      return Math.abs(diffDays) * 24;
+    }
+
+    return Math.round(diffH);
+  }; 
 
   const getStatusBadge = (status: HistoryRecord["status"]) => {
-    const statusConfig = {
-      completed: {
+    const statusConfig: Record<string, { text: string; className: string }> = {
+      approved: {
         text: "Terminée",
         className: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
       },
-      cancelled: {
+      rejected: {
         text: "Annulée",
         className: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
       },
-      noshow: {
-        text: "Absence",
-        className: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
-      },
+      pending: {
+        text: "En attente",
+        className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
+      }
     };
 
     const config = statusConfig[status];
@@ -99,29 +76,29 @@ const History = () => {
     );
   };
 
-  const totalHours = history
-    .filter((h) => h.status === "completed")
-    .reduce((sum, h) => sum + h.duration, 0);
-
-  const completedCount = history.filter((h) => h.status === "completed").length;
-
   const handleExportCSV = () => {
     // Créer le contenu CSV
-    const headers = ["ID", "Équipement", "Utilisateur", "Date", "Début", "Fin", "Durée (h)", "Statut"];
+    const headers = ["ID réservation", "Équipement", "Code équipement", "Utilisateur", "ID utilisateur", "Date réservation", "Date de début", "Date de fin", "Heure début", "Heure fin", "Durée (h)", "Statut", "Validé par", "Date validation"];
     const rows = history.map((h) => [
       h.id,
       h.equipmentName,
+      h.equipmentCode || "-",
       h.userName,
-      h.date,
-      h.startTime,
-      h.endTime,
-      h.duration,
-      h.status === "completed" ? "Terminée" : h.status === "cancelled" ? "Annulée" : "Absence",
+      h.userId || "-",
+      h.createdAt ? new Date(h.createdAt).toLocaleString('fr-FR') : "-",
+      h.date ? new Date(h.date).toLocaleDateString('fr-FR') : "-",
+      h.endDate ? new Date(h.endDate).toLocaleDateString('fr-FR') : "-",
+      h.startTime || "-",
+      h.endTime || "-",
+      h.duration || 0,
+      h.status === "approved" ? "Terminée" : h.status === "rejected" ? "Annulée" : "En attente",
+      h.validatedBy || "-",
+      h.validatedAt ? new Date(h.validatedAt).toLocaleString('fr-FR') : "-",
     ]);
 
     const csvContent = [
       headers.join(","),
-      ...rows.map((row) => row.join(",")),
+      ...rows.map((row) => row.map(cell => String(cell).replace(/,/g, '\\,')).join(",")),
     ].join("\n");
 
     // Télécharger le fichier
@@ -136,6 +113,62 @@ const History = () => {
     document.body.removeChild(link);
   };
 
+  // Fetch reservations from backend (filter by reservation creation date)
+  const fetchReservations = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+        const res = await api.get("/api/reservations");
+      const data = res.data;
+
+      const mapped = (data.reservations || []).map((r: any) => {
+        const start = r.startDate ? new Date(r.startDate) : null;
+        const end = r.endDate ? new Date(r.endDate) : null;
+        const duration = computeDurationHours(r.startDate, r.endDate);
+
+        return {
+          id: r._id,
+          equipmentName: r.equipment?.nom || r.equipmentName || "-",
+          equipmentCode: r.equipment?._id || r.equipmentCode || "-",
+          userName: r.user?.username || r.user?.email || "-",
+          userId: r.user?._id || "-",
+          createdAt: r.createdAt,
+          date: r.startDate,
+          endDate: r.endDate,
+          startTime: start ? start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "-",
+          endTime: end ? end.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "-",
+          duration,
+          status: r.status,
+          validatedBy: r.validatedBy?.username || r.validatedBy?.email || "-",
+          validatedAt: r.validatedAt
+        };
+      });
+
+      setHistory(mapped);
+    } catch (err: any) {
+      console.error("Error fetching reservations:", err);
+      setError(err?.response?.data?.message || err.message || "Erreur réseau");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReservations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Filter handlers removed
+
+  // Heures d'utilisation : somme des durées des réservations approuvées
+  const totalHours = history
+    .filter((h) => h.status === "approved")
+    .reduce((sum, h) => sum + (h.duration || 0), 0);
+
+  // Taux de complétion : pourcentage de réservations approuvées par rapport au nombre total
+  const approvedCount = history.filter((h) => h.status === "approved").length;
+  const completionRate = history.length > 0 ? Math.round((approvedCount / history.length) * 100) : 0;
+
   return (
     <div className="mx-auto max-w-7xl">
       {/* Header */}
@@ -148,25 +181,28 @@ const History = () => {
             Consultez l'historique complet des réservations
           </p>
         </div>
-        <button
-          onClick={handleExportCSV}
-          className="inline-flex items-center justify-center rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-600 focus:outline-none focus:ring-4 focus:ring-brand-300 dark:focus:ring-brand-800"
-        >
-          <svg
-            className="mr-2 h-5 w-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+        <div className="flex gap-3">
+          <button
+            onClick={handleExportCSV}
+            disabled={loading || history.length === 0}
+            className="inline-flex items-center justify-center rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-600 focus:outline-none focus:ring-4 focus:ring-brand-300 dark:focus:ring-brand-800 disabled:opacity-50"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-            />
-          </svg>
-          Exporter CSV
-        </button>
+            <svg
+              className="mr-2 h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            Exporter CSV
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -234,10 +270,7 @@ const History = () => {
                 Taux de complétion
               </p>
               <p className="mt-2 text-3xl font-bold text-purple-600 dark:text-purple-400">
-                {history.length > 0
-                  ? Math.round((completedCount / history.length) * 100)
-                  : 0}
-                %
+                {completionRate}%
               </p>
             </div>
             <div className="rounded-lg bg-purple-100 p-3 dark:bg-purple-900">
@@ -259,45 +292,13 @@ const History = () => {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-              Date de début
-            </label>
-            <input
-              type="date"
-              value={dateFilter.start}
-              onChange={(e) =>
-                setDateFilter({ ...dateFilter, start: e.target.value })
-              }
-              className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-brand-500 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            />
-          </div>
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-900 dark:text-white">
-              Date de fin
-            </label>
-            <input
-              type="date"
-              value={dateFilter.end}
-              onChange={(e) =>
-                setDateFilter({ ...dateFilter, end: e.target.value })
-              }
-              className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-brand-500 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            />
-          </div>
-          <div className="flex items-end">
-            <button
-              onClick={() => setDateFilter({ start: "", end: "" })}
-              className="w-full rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
-            >
-              Réinitialiser
-            </button>
-          </div>
+
+
+      {error && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {error}
         </div>
-      </div>
+      )}
 
       {/* Table */}
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
@@ -309,42 +310,80 @@ const History = () => {
                   Équipement
                 </th>
                 <th scope="col" className="px-6 py-3">
+                  Code équipement
+                </th>
+                <th scope="col" className="px-6 py-3">
                   Utilisateur
                 </th>
                 <th scope="col" className="px-6 py-3">
-                  Date
+                  ID utilisateur
                 </th>
                 <th scope="col" className="px-6 py-3">
-                  Horaire
+                  Date réservation
                 </th>
                 <th scope="col" className="px-6 py-3">
-                  Durée
+                  Date de début
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Date de fin
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Heure début
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Heure fin
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Durée (h)
                 </th>
                 <th scope="col" className="px-6 py-3">
                   Statut
                 </th>
+                <th scope="col" className="px-6 py-3">
+                  Validé par
+                </th>
+                <th scope="col" className="px-6 py-3">
+                  Date validation
+                </th>
               </tr>
             </thead>
             <tbody>
-              {history.map((record) => (
-                <tr
-                  key={record.id}
-                  className="border-b bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700"
-                >
-                  <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
-                    {record.equipmentName}
+              {loading ? (
+                <tr>
+                  <td colSpan={13} className="px-6 py-8 text-center text-gray-500">
+                    Chargement...
                   </td>
-                  <td className="px-6 py-4">{record.userName}</td>
-                  <td className="px-6 py-4">
-                    {new Date(record.date).toLocaleDateString("fr-FR")}
-                  </td>
-                  <td className="px-6 py-4">
-                    {record.startTime} - {record.endTime}
-                  </td>
-                  <td className="px-6 py-4">{record.duration}h</td>
-                  <td className="px-6 py-4">{getStatusBadge(record.status)}</td>
                 </tr>
-              ))}
+              ) : history.length === 0 ? (
+                <tr>
+                  <td colSpan={13} className="px-6 py-8 text-center text-gray-500">
+                    Aucun enregistrement trouvé
+                  </td>
+                </tr>
+              ) : (
+                history.map((record) => (
+                  <tr
+                    key={record.id}
+                    className="border-b bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700"
+                  >
+                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                      {record.equipmentName}
+                    </td>
+                    <td className="px-6 py-4">{record.equipmentCode}</td>
+                    <td className="px-6 py-4">{record.userName}</td>
+                    <td className="px-6 py-4">{record.userId}</td>
+                    <td className="px-6 py-4">{record.createdAt ? new Date(record.createdAt).toLocaleDateString("fr-FR") : "-"}</td>
+                    <td className="px-6 py-4">{record.date ? new Date(record.date).toLocaleDateString("fr-FR") : "-"}</td>
+                    <td className="px-6 py-4">{record.endDate ? new Date(record.endDate).toLocaleDateString("fr-FR") : "-"}</td>
+                    <td className="px-6 py-4">{record.startTime}</td>
+                    <td className="px-6 py-4">{record.endTime}</td>
+                    <td className="px-6 py-4">{record.duration}h</td>
+                    <td className="px-6 py-4">{getStatusBadge(record.status)}</td>
+                    <td className="px-6 py-4">{record.validatedBy || "-"}</td>
+                    <td className="px-6 py-4">{record.validatedAt ? new Date(record.validatedAt).toLocaleDateString("fr-FR") : "-"}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

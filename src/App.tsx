@@ -28,6 +28,7 @@ import NewReservation from "./pages/Reservations/NewReservation";
 import EditReservation from "./pages/Reservations/EditReservation";
 import History from "./pages/History/History";
 import NotFound from "./pages/OtherPage/NotFound";
+import NotAuthorized from "./pages/OtherPage/NotAuthorized";
 import AdminReservations from "./pages/Reservations/AdminReservations";
 import ForgotPassword from "./pages/AuthPages/ForgotPassword";
 import ResetPassword from "./pages/AuthPages/ResetPassword";
@@ -178,6 +179,9 @@ export default function App() {
               }
             />
           </Route>
+
+          {/* Not authorized */}
+          <Route path="not-authorized" element={<NotAuthorized />} />
 
           {/* 404 */}
           <Route path="*" element={<NotFound />} />

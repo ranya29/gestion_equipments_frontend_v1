@@ -85,22 +85,54 @@ const UsersList = () => {
   const handleSubmitUser = async (data: UserFormData) => {
     try {
       if (selectedUser) {
-        const payload: Partial<UserFormData> = { ...data };
-        if (!payload.motDePasse) delete payload.motDePasse;
+        // Mode édition
+        const payload: Partial<UserFormData> = { 
+          nom: data.nom,
+          prenom: data.prenom,
+          username: data.username,
+          email: data.email,
+          telephone: data.telephone,
+          statut: data.statut,
+          role: data.role
+        };
+        if (data.motDePasse) {
+          payload.motDePasse = data.motDePasse;
+        }
+        console.log("📤 PAYLOAD EDIT:", payload);
         await usersApi.update(selectedUser._id, payload);
       } else {
+        // Mode création
+        if (!data.motDePasse) {
+          alert("Le mot de passe est requis pour créer un utilisateur");
+          return;
+        }
+        if (!data.role) {
+          alert("Un rôle doit être sélectionné");
+          return;
+        }
         const payload = {
+          nom: data.nom,
+          prenom: data.prenom,
           username: data.username || `${data.nom}.${data.prenom}`,
           email: data.email,
-          password: data.motDePasse!,
+          telephone: data.telephone || "",
+          statut: data.statut || "actif",
+          password: data.motDePasse,
           roleName: data.role
         };
+        console.log("📤 PAYLOAD CREATE:", payload);
         await usersApi.register(payload);
       }
       await fetchUsers();
       handleModalClose();
     } catch (error) {
       console.error("❌ Erreur API :", error);
+      if (error instanceof Error) {
+        alert("Erreur : " + error.message);
+      } else {
+        console.error("Détails erreur:", error);
+        alert("Erreur : Impossible de traiter la demande");
+      }
     }
   };
 

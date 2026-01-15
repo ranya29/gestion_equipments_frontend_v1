@@ -5,11 +5,7 @@ import {
   BoxCubeIcon,
   CalenderIcon,
   ChevronDownIcon,
-  GridIcon,
   HorizontaLDots,
-  ListIcon,
-  PieChartIcon,
-  PlugInIcon,
   TableIcon,
   UserCircleIcon,
 } from "../icons";
@@ -46,9 +42,9 @@ const navItems: NavItem[] = [
     name: "Réservations",
     subItems: [
       { name: "Calendrier", path: "/calendar" },
-      { name: "Mes réservations", path: "/reservations", new: true },
+      { name: "Mes réservations", path: "/reservations" },
       { name: "Nouvelle réservation", path: "/reservations/new" },
-      { name: "Gérer les réservations", path: "/admin/reservations", pro: true },
+      { name: "Gérer les réservations", path: "/admin/reservations"},
 
     ],
   },
@@ -107,7 +103,7 @@ const AppSidebar: React.FC = () => {
       return items;
     }
 
-    const adminOnlyPaths = ["/users", "/equipments/add", "/history", "/admin/reservations"];
+    const adminOnlyPaths = ["/users", "/equipments/add", "/history"];
 
     return items
       .map((nav) => {
