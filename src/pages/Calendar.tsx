@@ -120,7 +120,7 @@ const Calendar: React.FC = () => {
     }
 
     api
-      .get("/api/reservations", { params })
+      .get("/reservations", { params })
       .then((res) => {
         const formattedEvents = res?.data?.reservations?.map(
           (reservation: any) => {
@@ -150,7 +150,7 @@ const Calendar: React.FC = () => {
   };
   const getAllEquipments = async () => {
     try {
-      const res = await api.get("/api/equipments");
+      const res = await api.get("/equipments");
       setEquipments(res.data.data);
     } catch (error) {
       console.error("Erreur lors de la récupération des équipements :", error);

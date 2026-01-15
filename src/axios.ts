@@ -2,10 +2,10 @@
 import axios, { AxiosInstance } from "axios";
 
 const API_URL: string = import.meta.env.VITE_API_URL; 
-// لازم:  VITE_API_URL="http://localhost:3000/api"
+// VITE_API_URL="http://localhost:3000"
 
 const api: AxiosInstance = axios.create({
-  baseURL: API_URL,
+  baseURL: `${API_URL}/api`,  // 🔴 Ajout du /api
   headers: {
     "Content-Type": "application/json",
   },

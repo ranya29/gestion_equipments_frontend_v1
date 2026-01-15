@@ -5,9 +5,7 @@ import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
-import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL; // ← AJOUTÉ
+import api from "../../axios";
 
 export default function UserPasswordCard() {
   const { isOpen, openModal, closeModal } = useModal();
@@ -65,17 +63,11 @@ export default function UserPasswordCard() {
         return;
       }
 
-      const response = await axios.patch(
-        `${API_URL}/api/profile/password`, // ← MODIFIÉ
+      const response = await api.patch(
+        '/profile/password',
         {
           currentPassword: formData.currentPassword,
           newPassword: formData.newPassword,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json",
-          },
         }
       );
 
@@ -117,10 +109,10 @@ export default function UserPasswordCard() {
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-3">
-              Password
+              Mot de passe
             </h4>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Change your password regularly to keep your account secure.
+              Changez régulièrement votre mot de passe pour sécuriser votre compte.
             </p>
           </div>
 
@@ -128,7 +120,7 @@ export default function UserPasswordCard() {
             onClick={openModal}
             className="flex w-full items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 lg:inline-flex lg:w-auto"
           >
-            Change Password
+            Changer le mot de passe
           </button>
         </div>
       </div>
@@ -138,10 +130,10 @@ export default function UserPasswordCard() {
         <div className="relative w-full p-4 overflow-y-auto bg-white rounded-3xl dark:bg-gray-900 lg:p-11">
           <div className="px-2 pr-14 mb-6">
             <h4 className="text-2xl font-semibold text-gray-800 dark:text-white/90 mb-1">
-              Change Password
+              Changer le mot de passe
             </h4>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Enter your current password and choose a new one.
+              Entrez votre mot de passe actuel et choisissez un nouveau.
             </p>
           </div>
 
@@ -162,39 +154,39 @@ export default function UserPasswordCard() {
           <form className="flex flex-col gap-4" onSubmit={(e: FormEvent) => e.preventDefault()}>
             {/* Current Password */}
             <div>
-              <Label>Current Password</Label>
+              <Label>Mot de passe actuel</Label>
               <Input
                 name="currentPassword"
                 type="password"
                 value={formData.currentPassword}
                 onChange={handleInputChange}
-                placeholder="Enter current password"
+                placeholder="Entrez votre mot de passe actuel"
                 required
               />
             </div>
 
             {/* New Password */}
             <div>
-              <Label>New Password</Label>
+              <Label>Nouveau mot de passe</Label>
               <Input
                 name="newPassword"
                 type="password"
                 value={formData.newPassword}
                 onChange={handleInputChange}
-                placeholder="Enter new password"
+                placeholder="Entrez votre nouveau mot de passe"
                 required
               />
             </div>
 
             {/* Confirm Password */}
             <div>
-              <Label>Confirm Password</Label>
+              <Label>Confirmer le mot de passe</Label>
               <Input
                 name="confirmPassword"
                 type="password"
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
-                placeholder="Confirm new password"
+                placeholder="Confirmez le nouveau mot de passe"
                 required
               />
             </div>
@@ -202,10 +194,10 @@ export default function UserPasswordCard() {
             {/* ACTION BUTTONS */}
             <div className="flex items-center justify-end gap-3 mt-3">
               <Button variant="outline" onClick={handleModalClose} disabled={loading}>
-                Cancel
+                Annuler
               </Button>
               <Button onClick={handleSave} disabled={loading}>
-                {loading ? "Saving..." : "Save Changes"}
+                {loading ? "Enregistrement..." : "Enregistrer les modifications"}
               </Button>
             </div>
           </form>

@@ -1,9 +1,25 @@
 import axios from '../axios';
+import type { AuthUser } from '../types/auth.types';
+
+interface AuthResponse {
+  token: string;
+  user: AuthUser;
+  message?: string;
+}
+
+interface RegisterUserData {
+  prenom: string;
+  nom: string;
+  username: string;
+  email: string;
+  password: string;
+  roleName: string;
+}
 
 export const authService = {
   // Register
-  register: async (userData) => {
-    const response = await axios.post('/auth/register', userData);
+  register: async (userData: RegisterUserData): Promise<AuthResponse> => {
+    const response = await axios.post<AuthResponse>('/auth/register', userData);
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -12,8 +28,8 @@ export const authService = {
   },
 
   // Login
-  login: async (email, password) => {
-    const response = await axios.post('/auth/login', { email, password });
+  login: async (email: string, password: string): Promise<AuthResponse> => {
+    const response = await axios.post<AuthResponse>('/auth/login', { email, password });
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -22,13 +38,13 @@ export const authService = {
   },
 
   // Get Profile
-  getProfile: async () => {
-    const response = await axios.get('/auth/profile');
+  getProfile: async (): Promise<AuthResponse> => {
+    const response = await axios.get<AuthResponse>('/auth/profile');
     return response.data;
   },
 
   // Logout
-  logout: () => {
+  logout: (): void => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('role');
@@ -36,8 +52,8 @@ export const authService = {
   },
 
   // Change Password
-  changePassword: async (oldPassword, newPassword) => {
-    const response = await axios.put('/auth/change-password', {
+  changePassword: async (oldPassword: string, newPassword: string): Promise<AuthResponse> => {
+    const response = await axios.put<AuthResponse>('/auth/change-password', {
       oldPassword,
       newPassword
     });
@@ -45,13 +61,13 @@ export const authService = {
   },
 
   // Get current user from localStorage
-  getCurrentUser: () => {
+  getCurrentUser: (): AuthUser | null => {
     const user = localStorage.getItem('user');
     return user ? JSON.parse(user) : null;
   },
 
   // Check if user is authenticated
-  isAuthenticated: () => {
+  isAuthenticated: (): boolean => {
     return !!localStorage.getItem('token');
   }
 };

@@ -118,7 +118,7 @@ const History = () => {
     setLoading(true);
     setError(null);
     try {
-        const res = await api.get("/api/reservations");
+        const res = await api.get("/reservations");
       const data = res.data;
 
       const mapped = (data.reservations || []).map((r: any) => {

@@ -53,7 +53,7 @@ const EditReservation: React.FC<{
   // Charger tous les équipements
   const getAllEquipments = async () => {
     try {
-      const res = await api.get("/api/equipments");
+      const res = await api.get("/equipments");
       setListEquipements(res.data.data);
     } catch (error) {
       console.error("Erreur lors de la récupération des équipements :", error);

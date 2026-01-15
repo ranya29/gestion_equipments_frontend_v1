@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
+import api from "../../axios";
 import { toast } from "react-toastify"; // <- ajouté
 import "react-toastify/dist/ReactToastify.css";
 
@@ -23,17 +23,13 @@ const ReservationsList = () => {
   // Récupérer les réservations depuis le backend
   const fetchReservations = async () => {
     try {
-      const res = await axios.get("http://localhost:3000/api/reservations", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      const res = await api.get("/reservations");
 
       setReservations(
         res.data.reservations.map((r: any) => ({
           id: r._id,
-          equipmentName: r.equipment.nom,
-          userName: r.user.nom,
+          equipmentName: r.equipment?.nom || "Équipement supprimé",
+          userName: r.user?.nom || "Utilisateur supprimé",
           date: r.startDate,
           startTime: new Date(r.startDate).toLocaleTimeString("fr-FR", {
             hour: "2-digit",
@@ -55,9 +51,7 @@ const ReservationsList = () => {
   // Fonction pour annuler une réservation
   const cancelReservation = async (id: string) => {
     try {
-      await axios.delete(`http://localhost:3000/api/reservations/${id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
+      await api.delete(`/reservations/${id}`);
       toast.success("Réservation annulée avec succès !");
       // Met à jour la liste après annulation
       setReservations(reservations.filter((r) => r.id !== id));

@@ -5,9 +5,7 @@ import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
-import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL; 
+import api from "../../axios"; 
 
 export default function UserAccountCard() {
   const { isOpen, openModal, closeModal } = useModal();
@@ -33,11 +31,7 @@ export default function UserAccountCard() {
         return;
       }
 
-      const response = await axios.delete(`${API_URL}/api/profile`, { // ← MODIFIÉ
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
+      const response = await api.delete('/profile', { 
         data: { password }
       });
 
@@ -66,15 +60,15 @@ export default function UserAccountCard() {
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h4 className="text-lg font-semibold text-red-800 dark:text-red-400 lg:mb-3">
-              Danger Zone
+              Zone dangereuse
             </h4>
             <p className="text-sm text-red-600 dark:text-red-400/80 mb-3">
-              Once you deactivate your account, there is no going back. Please be certain.
+              Une fois votre compte désactivé, il n'y a pas de retour. Assurez-vous.
             </p>
             <ul className="text-xs text-red-600 dark:text-red-400/70 space-y-1">
-              <li>• All your personal data will be removed</li>
-              <li>• You will lose access to all services</li>
-              <li>• This action cannot be undone</li>
+              <li>• Toutes vos données personnelles seront supprimées</li>
+              <li>• Vous perdrez accès à tous les services</li>
+              <li>• Cette action ne peut pas être annulée</li>
             </ul>
           </div>
 
@@ -85,7 +79,7 @@ export default function UserAccountCard() {
             <svg className="fill-current" width="18" height="18" viewBox="0 0 18 18" fill="none">
               <path d="M11.25 4.5V3.75C11.25 2.92157 10.5784 2.25 9.75 2.25H8.25C7.42157 2.25 6.75 2.92157 6.75 3.75V4.5M3 4.5H15M13.5 4.5V13.5C13.5 14.3284 12.8284 15 12 15H6C5.17157 15 4.5 14.3284 4.5 13.5V4.5M7.5 8.25V11.25M10.5 8.25V11.25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            Deactivate Account
+              Désactiver le compte
           </button>
         </div>
       </div>
@@ -101,19 +95,19 @@ export default function UserAccountCard() {
               </div>
               <div>
                 <h4 className="text-2xl font-semibold text-gray-800 dark:text-white/90">
-                  Deactivate Account
+                  Désactiver le compte
                 </h4>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  This action is permanent
+                  Cette action est permanente
                 </p>
               </div>
             </div>
             <div className="p-4 mb-6 bg-red-50 border border-red-200 rounded-lg dark:bg-red-900/20 dark:border-red-800">
               <p className="text-sm text-red-800 dark:text-red-300 font-medium mb-2">
-                ⚠️ Warning: This action cannot be undone!
+                ⚠️ Attention : Cette action ne peut pas être annulée !
               </p>
               <p className="text-xs text-red-600 dark:text-red-400">
-                Your account and all associated data will be permanently deleted. You will not be able to recover your account.
+                Votre compte et toutes les données associées seront supprimées définitivement. Vous ne pourrez pas récupérer votre compte.
               </p>
             </div>
           </div>
@@ -128,21 +122,21 @@ export default function UserAccountCard() {
             <div className="px-2 overflow-y-auto custom-scrollbar">
               <div className="grid grid-cols-1 gap-y-5">
                 <div>
-                  <Label>Confirm Password</Label>
+                  <Label>Confirmer le mot de passe</Label>
                   <Input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
+                    placeholder="Entrez votre mot de passe"
                     required
                   />
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    Enter your password to confirm
+                    Entrez votre mot de passe pour confirmer
                   </p>
                 </div>
 
                 <div>
-                  <Label>Type "DEACTIVATE" to confirm</Label>
+                  <Label>Tapez « DÉSACTIVER » pour confirmer</Label>
                   <Input
                     type="text"
                     value={confirmText}
@@ -151,19 +145,19 @@ export default function UserAccountCard() {
                     required
                   />
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    Type exactly "DEACTIVATE" in capital letters
+                    Tapez exactement « DÉSACTIVER » en majuscules
                   </p>
                 </div>
 
                 <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg dark:bg-gray-800 dark:border-gray-700">
                   <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 font-medium">
-                    What happens when you deactivate:
+                    Ce qui se passe quand vous désactivez :
                   </p>
                   <ul className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-                    <li>✓ Your profile will be immediately removed</li>
-                    <li>✓ All your data will be deleted permanently</li>
-                    <li>✓ You will be logged out from all devices</li>
-                    <li>✓ This email address will become available for reuse</li>
+                    <li>✓ Votre profil sera supprimé immédiatement</li>
+                    <li>✓ Toutes vos données seront supprimées définitivement</li>
+                    <li>✓ Vous serez déconnecté de tous les appareils</li>
+                    <li>✓ Cette adresse email sera disponible pour réutilisation</li>
                   </ul>
                 </div>
               </div>
@@ -171,7 +165,7 @@ export default function UserAccountCard() {
 
             <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
               <Button size="sm" variant="outline" onClick={handleModalClose} disabled={loading}>
-                Cancel
+                Annuler
               </Button>
               <Button
                 size="sm"

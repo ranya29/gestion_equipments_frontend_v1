@@ -27,22 +27,6 @@ export default function EquipmentManagement() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Cacher le header de l'application sur cette page
-  useEffect(() => {
-    const header = document.querySelector('header');
-    if (header) {
-      header.style.display = 'none';
-    }
-    
-    // Restaurer le header quand on quitte la page
-    return () => {
-      const header = document.querySelector('header');
-      if (header) {
-        header.style.display = '';
-      }
-    };
-  }, []);
-
   const [formData, setFormData] = useState<EquipmentFormData>({
     nom: '',
     photo: null,
