@@ -1,62 +1,69 @@
-// Reservations/EditReservation.tsx
 import { useState, ChangeEvent, useEffect } from "react";
 import { toast } from "react-toastify";
 import api from "../../axios";
 
-const EditReservation: React.FC<{
+interface Props {
   reservation: any;
   onClose: () => void;
   getAllRéservations: () => void;
   disabled?: boolean;
-}> = ({ reservation, onClose, getAllRéservations, disabled = false }) => {
+}
+
+const EditReservation: React.FC<Props> = ({
+  reservation,
+  onClose,
+  getAllRéservations,
+  disabled = false,
+}) => {
   const isDisabled = Boolean(disabled);
+
   const [equipment, setEquipment] = useState<string>("");
   const [quantity, setQuantity] = useState<number>(1);
   const [startTime, setStartTime] = useState<string>("");
   const [endTime, setEndTime] = useState<string>("");
   const [description, setDescription] = useState<string>("");
-  const [listEquipements, setListEquipements] = useState<Array<any>>([]);
+
+  const [listEquipements, setListEquipements] = useState<any[]>([]);
 
   const [equipmentError, setEquipmentError] = useState("");
   const [quantityError, setQuantityError] = useState("");
   const [timeError, setTimeError] = useState("");
   const [descriptionError, setDescriptionError] = useState("");
 
-  // Convertit une date ISO en valeur compatible `input[type="datetime-local"]`
+  /* ------------------ Utils ------------------ */
   const formatDateForInput = (isoDate?: string | null) => {
     if (!isoDate) return "";
     const d = new Date(isoDate);
     if (isNaN(d.getTime())) return "";
     const pad = (n: number) => n.toString().padStart(2, "0");
-    const yyyy = d.getFullYear();
-    const mm = pad(d.getMonth() + 1);
-    const dd = pad(d.getDate());
-    const hh = pad(d.getHours());
-    const min = pad(d.getMinutes());
-    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
+      d.getDate()
+    )}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   };
 
-  // Équipement sélectionné
+  /* ------------------ Equipment selection ------------------ */
   const selectedEquipment = listEquipements.find((e) => e._id === equipment);
-  const maxCapacity = selectedEquipment ? selectedEquipment.capacite.valeur : null;
-  const capacityUnit = selectedEquipment ? selectedEquipment.capacite.unite : "";
+  const maxCapacity = selectedEquipment?.capacite?.valeur ?? null;
+  const capacityUnit = selectedEquipment?.capacite?.unite ?? "";
 
-  // Charger la réservation existante
+  /* ------------------ Fetch reservation ------------------ */
   const fetchReservation = () => {
-    setEquipment(reservation?.equipment?._id);
-    setQuantity(reservation?.quantity);
-    setStartTime(formatDateForInput(reservation?.startDate));
-    setEndTime(formatDateForInput(reservation?.endDate));
-    setDescription(reservation?.description);
+    if (!reservation) return;
+    setEquipment(reservation.equipment?._id ?? "");
+    setQuantity(reservation.quantity ?? 1);
+    setStartTime(formatDateForInput(reservation.startDate));
+    setEndTime(formatDateForInput(reservation.endDate));
+    setDescription(reservation.description ?? "");
   };
 
-  // Charger tous les équipements
+  /* ------------------ Fetch equipments ------------------ */
   const getAllEquipments = async () => {
     try {
       const res = await api.get("/equipments");
-      setListEquipements(res.data.data);
+      setListEquipements(res.data.data || []);
     } catch (error) {
-      console.error("Erreur lors de la récupération des équipements :", error);
+      console.error("Erreur récupération équipements :", error);
+      toast.error("Impossible de charger les équipements.");
     }
   };
 
@@ -65,76 +72,57 @@ const EditReservation: React.FC<{
     fetchReservation();
   }, [reservation]);
 
-  // Modifier la réservation
+  /* ------------------ Modifier ------------------ */
   const onFinish = async () => {
-    // Check if reservation can be edited
-    if (reservation?.status !== "pending") {
-      toast.error(`Impossible de modifier une réservation ${reservation?.status}.`);
-      return;
-    }
+    let hasError = false;
+
+    if (!equipment) {
+      setEquipmentError("Veuillez sélectionner un équipement.");
+      hasError = true;
+    } else setEquipmentError("");
+
+    if (!quantity || quantity <= 0) {
+      setQuantityError("La quantité doit être supérieure à 0.");
+      hasError = true;
+    } else if (maxCapacity !== null && quantity > maxCapacity) {
+      setQuantityError(
+        `La quantité maximale est ${maxCapacity} ${capacityUnit}.`
+      );
+      hasError = true;
+    } else setQuantityError("");
+
+    if (!startTime || !endTime) {
+      setTimeError("Veuillez renseigner les dates.");
+      hasError = true;
+    } else if (new Date(endTime) <= new Date(startTime)) {
+      setTimeError("La date de fin doit être après la date de début.");
+      hasError = true;
+    } else setTimeError("");
+
+    if (!description || !description.trim()) {
+      setDescriptionError("Veuillez entrer une description.");
+      hasError = true;
+    } else if (description.length > 500) {
+      setDescriptionError("La description ne doit pas dépasser 500 caractères.");
+      hasError = true;
+    } else setDescriptionError("");
+
+    if (hasError) return;
 
     try {
-      let hasError = false;
-
-      if (!equipment) {
-        setEquipmentError("Veuillez sélectionner un équipement.");
-        hasError = true;
-      } else setEquipmentError("");
-
-      if (quantity <= 0 || isNaN(quantity)) {
-        setQuantityError("La quantité doit être un nombre supérieur à 0.");
-        hasError = true;
-      } else if (maxCapacity !== null && quantity > maxCapacity) {
-        setQuantityError(
-          `La quantité maximale pour cet équipement est ${maxCapacity} ${capacityUnit}.`
-        );
-        hasError = true;
-      } else setQuantityError("");
-
-      if (!startTime || !endTime) {
-        setTimeError("Veuillez entrer les heures de début et de fin.");
-        hasError = true;
-      } else if (new Date(endTime) <= new Date(startTime)) {
-        setTimeError("L'heure de fin doit être après l'heure de début.");
-        hasError = true;
-      } else setTimeError("");
-
-      if (!description?.trim()) {
-        setDescriptionError("Veuillez entrer une description.");
-        hasError = true;
-      } else if (description?.length > 500) {
-        setDescriptionError("La description ne peut pas dépasser 500 caractères.");
-        hasError = true;
-      } else setDescriptionError("");
-
-      if (hasError) return;
-
-      // Convertir les dates correctement (datetime-local preserves local time)
-      const startDate = new Date(startTime);
-      const endDate = new Date(endTime);
-
-      const payload = {
+      const res = await api.put(`/reservations/${reservation._id}`, {
         equipmentId: equipment,
         quantity,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        description: description,
-      };
+        startDate: new Date(startTime).toISOString(),
+        endDate: new Date(endTime).toISOString(),
+        description: description.trim(),
+      });
 
-      console.log("=== MISE À JOUR RÉSERVATION ===");
-      console.log("Payload:", JSON.stringify(payload, null, 2));
-      console.log("Reservation status:", reservation?.status);
-
-      const res = await api.put(
-        `/reservations/${reservation?._id}`,
-        payload
-      );
-
-      toast.success(res.data.message);
+      toast.success(res.data.message || "Réservation modifiée avec succès.");
       getAllRéservations();
       onClose();
     } catch (error: any) {
-      console.error("Erreur lors de la modification :", error.response?.data || error.message);
+      console.error("Erreur modification :", error);
       toast.error(
         error.response?.data?.message ||
           "Erreur lors de la modification de la réservation."
@@ -142,201 +130,130 @@ const EditReservation: React.FC<{
     }
   };
 
-  // ====== NOUVEAU : Supprimer la réservation ======
-  const handleDelete = async () => {
-    if (!reservation?._id) return;
-    if (!window.confirm("Voulez-vous vraiment supprimer cette réservation ?")) return;
+  /* ------------------ Supprimer ------------------ */
+  const onDelete = async () => {
+    const confirm = window.confirm(
+      "Êtes-vous sûr(e) de vouloir supprimer cette réservation ?"
+    );
+    if (!confirm) return;
 
     try {
       await api.delete(`/reservations/${reservation._id}`);
-      toast.success("Réservation supprimée avec succès !");
+      toast.success("Réservation supprimée avec succès.");
       getAllRéservations();
       onClose();
     } catch (error: any) {
-      console.error("Erreur suppression réservation :", error);
+      console.error("Erreur suppression :", error);
       toast.error(
-        error.response?.data?.message || "Impossible de supprimer la réservation."
+        error.response?.data?.message ||
+          "Erreur lors de la suppression de la réservation."
       );
     }
   };
-  // ================================================
 
+  /* ------------------ UI ------------------ */
   return (
     <form className="space-y-5">
-      {/* Équipement */}
+      {/* Equipment */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Équipement
-        </label>
+        <label className="block text-sm font-medium">Équipement</label>
         <select
-          name="equipment"
           value={equipment}
           disabled={isDisabled}
-          onChange={(e: ChangeEvent<HTMLSelectElement>) => {
+          onChange={(e) => {
             if (isDisabled) return;
-            setEquipmentError("");
             setEquipment(e.target.value);
+            setEquipmentError("");
             setQuantity(1);
-            setQuantityError("");
           }}
-          className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-          required
+          className="w-full border rounded px-4 py-2"
         >
           <option value="">Sélectionner un équipement</option>
-          {listEquipements.map((equip) => (
-            <option key={equip._id} value={equip._id}>
-              {equip.nom}
+          {listEquipements.map((e) => (
+            <option key={e._id} value={e._id}>
+              {e.nom}
             </option>
           ))}
         </select>
-        {equipmentError && (
-          <span className="text-red-500 text-sm mt-1">{equipmentError}</span>
-        )}
+        {equipmentError && <p className="text-red-500 text-sm">{equipmentError}</p>}
       </div>
 
-      {/* Quantité */}
+      {/* Quantity */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Quantité
-        </label>
+        <label className="block text-sm font-medium">Quantité</label>
         <input
           type="number"
-          name="quantity"
           value={quantity}
           min={1}
           max={maxCapacity ?? undefined}
           disabled={isDisabled || !selectedEquipment}
-          onChange={(e: ChangeEvent<HTMLInputElement>) => {
-            if (isDisabled) return;
-            const val = parseInt(e.target.value, 10);
-            setQuantity(val);
-
-            if (val <= 0 || isNaN(val)) {
-              setQuantityError("La quantité doit être un nombre supérieur à 0.");
-            } else if (maxCapacity !== null && val > maxCapacity) {
-              setQuantityError(
-                `La quantité maximale pour cet équipement est ${maxCapacity} ${capacityUnit}.`
-              );
-            } else setQuantityError("");
-          }}
-          className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-          required
+          onChange={(e) => setQuantity(Number(e.target.value))}
+          className="w-full border rounded px-4 py-2"
         />
-        {maxCapacity !== null && quantity >= maxCapacity && (
-          <p className="text-sm text-gray-500 mt-1">
-            Capacité maximale : {maxCapacity} {capacityUnit}
-          </p>
-        )}
-        {quantityError && (
-          <span className="text-red-500 text-sm mt-1">{quantityError}</span>
-        )}
+        {quantityError && <p className="text-red-500 text-sm">{quantityError}</p>}
       </div>
 
       {/* Dates */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Date de début
-          </label>
-          <input
-            type="datetime-local"
-            name="startDate"
-            value={startTime}
-            disabled={isDisabled}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => {
-              if (isDisabled) return;
-              setStartTime(e.target.value);
-            }}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Date de fin
-          </label>
-          <input
-            type="datetime-local"
-            name="endDate"
-            value={endTime}
-            disabled={isDisabled}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => {
-              if (isDisabled) return;
-              setEndTime(e.target.value);
-            }}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            required
-          />
-        </div>
+      <div className="grid grid-cols-2 gap-4">
+        <input
+          type="datetime-local"
+          value={startTime}
+          disabled={isDisabled}
+          onChange={(e) => setStartTime(e.target.value)}
+          className="border rounded px-4 py-2"
+        />
+        <input
+          type="datetime-local"
+          value={endTime}
+          disabled={isDisabled}
+          onChange={(e) => setEndTime(e.target.value)}
+          className="border rounded px-4 py-2"
+        />
       </div>
-      {timeError && <span className="text-red-500 text-sm mt-1">{timeError}</span>}
+      {timeError && <p className="text-red-500 text-sm">{timeError}</p>}
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Description
-        </label>
         <textarea
-          name="description"
           value={description}
           disabled={isDisabled}
-          onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
-            if (isDisabled) return;
-            setDescription(e.target.value);
-          }}
+          onChange={(e) => setDescription(e.target.value)}
           rows={4}
-          placeholder="Indiquez la description de réservation"
-          className="w-full border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          className="w-full border rounded px-4 py-2"
         />
         {descriptionError && (
-          <span className="text-red-500 text-sm mt-1">{descriptionError}</span>
+          <p className="text-red-500 text-sm">{descriptionError}</p>
         )}
       </div>
 
-      {/* Boutons */}
+      {/* Buttons */}
       <div className="flex justify-end gap-3">
         <button
           type="button"
-          onClick={() => onClose()}
-          className="px-5 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+          onClick={onClose}
+          className="border px-5 py-2 rounded"
         >
           Annuler
         </button>
 
-        {reservation?.status === "pending" && !isDisabled && (
+        {!isDisabled && (
           <>
             <button
               type="button"
-              onClick={handleDelete}
-              className="px-5 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+              onClick={onFinish}
+              className="bg-blue-600 text-white px-5 py-2 rounded"
             >
-              Supprimer
+              Modifier
             </button>
 
             <button
               type="button"
-              onClick={onFinish}
-              className="px-5 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+              onClick={onDelete}
+              className="bg-red-600 text-white px-5 py-2 rounded hover:bg-red-700"
             >
-              Modifier
+              Supprimer
             </button>
           </>
-        )}
-
-        {reservation?.status !== "pending" && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2 text-yellow-800 text-sm">
-            Cette réservation a le statut "{reservation?.status}" et ne peut pas être modifiée.
-          </div>
-        )}
-
-        {isDisabled && reservation?.status === "pending" && (
-          <button
-            type="button"
-            onClick={() => onClose()}
-            className="px-5 py-2 rounded-lg bg-gray-500 text-white hover:bg-gray-600"
-          >
-            Fermer
-          </button>
         )}
       </div>
     </form>

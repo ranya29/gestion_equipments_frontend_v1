@@ -1,4 +1,3 @@
-//pages/calender.tsx
 import FullCalendar from "@fullcalendar/react";
 import {
   EventContentArg,
@@ -13,9 +12,11 @@ import React, { useEffect, useRef, useState } from "react";
 import { useModal } from "../hooks/useModal";
 import Modal from "../components/common/Modal";
 import { useAuth } from "../context/AuthContext";
+import { toast } from "react-toastify";
 import NewReservation from "./Reservations/NewReservation";
 import EditReservation from "./Reservations/EditReservation";
 import api from "../axios";
+import axios from "axios";
 import {
   BoxesIcon,
   CalendarClock,
@@ -122,9 +123,7 @@ const Calendar: React.FC = () => {
     api
       .get("/reservations", { params })
       .then((res) => {
-        const formattedEvents = res?.data?.reservations
-          ?.filter((reservation: any) => reservation.status === "approved")
-          ?.map(
+        const formattedEvents = res?.data?.reservations?.map(
           (reservation: any) => {
             const equipmentName =
               reservation.equipment?.nom || "Équipement non spécifié";
@@ -167,7 +166,7 @@ const Calendar: React.FC = () => {
   }, [selectedEquipment, filterStartDate, filterEndDate, showAvailableOnly]);
 
   // Sélection d'une date pour ajouter un événement
-  const handleDateSelect = (_selectInfo: DateSelectArg) => {
+  const handleDateSelect = (selectInfo: DateSelectArg) => {
     resetModalFields();
     setDisabledEdit(false);
     openModal();
@@ -197,10 +196,9 @@ const Calendar: React.FC = () => {
         )
       );
       return decoded.id || decoded._id || decoded.userId || null;
-    } catch (err) {
-        console.error("Token decode error:", err);
-        return null;
-      }
+    } catch (e) {
+      return null;
+    }
   };
 
   const handleEventClick = (clickInfo: EventClickArg) => {

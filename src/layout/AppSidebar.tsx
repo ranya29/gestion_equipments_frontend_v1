@@ -33,9 +33,7 @@ const navItems: NavItem[] = [
     icon: <BoxCubeIcon />,
     name: "Équipements",
     subItems: [
-      { name: "Liste des équipements", path: "/equipments" },
-      { name: "Ajouter équipement", path: "/equipments/add" },
-    ],
+      { name: "Liste des équipements", path: "/equipments" },    ],
   },
   {
     icon: <CalenderIcon />,
@@ -43,7 +41,6 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Calendrier", path: "/calendar" },
       { name: "Mes réservations", path: "/reservations" },
-      { name: "Nouvelle réservation", path: "/reservations/new" },
       { name: "Gérer les réservations", path: "/admin/reservations"},
 
     ],
